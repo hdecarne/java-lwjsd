@@ -1,0 +1,33 @@
+sudo: false
+
+language: java
+
+addons:
+  sonarcloud:
+    organization: "hdecarne-github"
+
+jdk:
+  - oraclejdk9
+
+os:
+  - linux
+  
+script:
+  - ./gradlew build sonarqube artifactoryPublish
+
+notifications:
+  email:
+    recipients:
+      - hdecarne@gmail.com
+      
+# See https://docs.travis-ci.com/user/languages/java/#Caching
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+  - rm -f  $HOME/.gradle/caches/*/fileHashes/fileHashes.bin
+  - rm -f  $HOME/.gradle/caches/*/fileHashes/fileHashes.lock
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+    - $HOME/.sonar/cache

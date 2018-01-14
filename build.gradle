@@ -1,0 +1,139 @@
+// Plugins
+plugins {
+	id "java-library"
+	id "jacoco"
+	id "maven-publish"
+	id "eclipse"
+	id "org.sonarqube" version "2.6.1"
+	id "com.jfrog.artifactory" version "4.6.0" 
+	id "com.jfrog.bintray" version "1.8.0"
+}
+// Build helpers
+def snapshotBuild = project.version.endsWith("-SNAPSHOT")
+
+def resolveProperty(propertyName, envName) {
+	def resolved = (project.findProperty(propertyName) ?: System.getenv(envName));
+	
+	if(resolved == null) {
+		throw new GradleException("Missing property/environment variable: '${propertyName}'/'${envName}")
+	} 
+	return resolved; 
+}
+
+// Project
+sourceCompatibility = JavaVersion.VERSION_1_9
+targetCompatibility = JavaVersion.VERSION_1_9
+
+repositories {
+	jcenter()
+}
+
+dependencies {
+	api("de.carne.common:java-default:6")
+	testImplementation("junit:junit:4.12")
+}
+
+jacoco {
+	toolVersion = "0.8.0"
+}
+
+jacocoTestReport {
+	reports {
+		xml.enabled false
+		html.enabled true
+		html.destination file("${buildDir}/reports/jacocoHtml")
+		csv.enabled false
+	}
+}
+
+task sourceJar(type: Jar) {
+	from sourceSets.main.allJava
+	classifier "sources"
+}
+
+task javadocJar(type: Jar) {
+	from javadoc
+	classifier = "javadoc"
+}
+
+publishing {
+	publications {
+		Bintray(MavenPublication) {
+			from components.java
+			artifact sourceJar
+			artifact javadocJar
+			pom.withXml {
+				asNode().children().last() + {
+					resolveStrategy = Closure.DELEGATE_FIRST
+					name project.name
+					description projectDescription
+					url projectUrl
+					licenses {
+						license {
+							name projectLicense
+				            url projectLicenseUrl
+				            distribution "repo"
+				        }
+				    }
+				    developers {
+				        developer {
+				            id project.resolveProperty("developerId", "DEVELOPER_ID")
+				            name project.resolveProperty("developerName", "DEVELOPER_NAME")
+				            email project.resolveProperty("developerEmail", "DEVELOPER_EMAIL")
+				        }
+				    }
+				    scm {
+						url projectScmUrl
+				    }
+				}
+			}
+		}
+	}
+}
+
+artifactory {
+	contextUrl = "https://oss.jfrog.org/artifactory"
+	publish {
+		repository {
+			repoKey = (snapshotBuild ? "oss-snapshot-local" : "oss-release-local")
+			username = project.resolveProperty("artifactory_user", "ARTIFACTORY_USER")
+			password = project.resolveProperty("artifactory_password", "ARTIFACTORY_PASSWORD")
+			maven = true
+		}
+		defaults {
+			publications("Bintray")
+		}
+	}
+	resolve {
+		repoKey = (snapshotBuild ? "libs-snapshot" : "libs-release")
+		username = project.resolveProperty("artifactory_user", "ARTIFACTORY_USER")
+		password = project.resolveProperty("artifactory_password", "ARTIFACTORY_PASSWORD")
+		maven = true
+	}
+	clientConfig.setIncludeEnvVars(false)
+}
+
+bintray {
+	user = project.resolveProperty("bintrayUser", "BINTRAY_USER")
+	key = project.resolveProperty("bintrayKey", "BINTRAY_KEY")
+	publications = [ "Bintray" ]
+	pkg {
+		repo = "maven"
+		name = project.name
+		licenses = [ projectLicenseId ]
+		vcsUrl = projectScmUrl
+		version {
+			gpg {
+				sign = true
+				passphrase = project.resolveProperty("bintrayGpgPassphrase", "BINTRAY_GPG_PASSPHRASE")
+            }
+		}
+	}
+}
+
+eclipse {
+	classpath {
+		downloadSources = true
+		downloadJavadoc = true
+	}
+}
