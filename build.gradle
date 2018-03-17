@@ -1,13 +1,10 @@
 // Plugins
 plugins {
-	id "java-library"
-	id "jacoco"
-	id "maven-publish"
-	id "eclipse"
-	id "org.sonarqube" version "2.6.2"
-	id "com.jfrog.artifactory" version "4.6.2" 
-	id "com.jfrog.bintray" version "1.8.0"
+	id "org.sonarqube" version "2.6.2" apply true
+	id "com.jfrog.artifactory" version "4.6.2" apply false
+	id "com.jfrog.bintray" version "1.8.0" apply false
 }
+
 // Build helpers
 def snapshotBuild = project.version.endsWith("-SNAPSHOT")
 
@@ -20,139 +17,141 @@ def resolveProperty(propertyName, envName) {
 	return resolved; 
 }
 
-// Project
-sourceCompatibility = JavaVersion.VERSION_1_9
-targetCompatibility = JavaVersion.VERSION_1_9
+// Projects
 
-repositories {
-	jcenter()
-	maven { url "https://oss.jfrog.org/libs-release/" }
-	if(snapshotBuild) {
-		maven { url "https://oss.jfrog.org/libs-snapshot/" }
+subprojects {
+
+	apply plugin: "java-library"
+	apply plugin: "jacoco"
+	apply plugin: "maven-publish"
+	apply plugin: "eclipse"
+	apply plugin: "com.jfrog.artifactory" 
+	apply plugin: "com.jfrog.bintray"
+
+	sourceCompatibility = JavaVersion.VERSION_1_9
+	targetCompatibility = JavaVersion.VERSION_1_9
+
+	repositories {
+		jcenter()
+		maven { url "https://oss.jfrog.org/libs-release/" }
+		if(snapshotBuild) {
+			maven { url "https://oss.jfrog.org/libs-snapshot/" }
+		}
 	}
-}
 
-dependencies {
-	api("de.carne.common:java-boot:2-SNAPSHOT")
-	api("de.carne.common:java-default:7-SNAPSHOT")
-	testImplementation("junit:junit:4.12")
-}
-
-jacoco {
-	toolVersion = "0.8.0"
-}
-
-jacocoTestReport {
-	reports {
-		xml.enabled false
-		html.enabled true
-		html.destination file("${buildDir}/reports/jacoco")
-		csv.enabled false
+	dependencies {
+		api("de.carne.common:java-default:8.+")
+		testImplementation("org.junit.jupiter:junit-jupiter-api:5.1.+")
+		testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.1.+")
+		testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.0.+")
 	}
-}
 
-jar {
-	manifest {
-		attributes(
-			"Main-Class": "de.carne.boot.Application",
-			"X-Application-Name": "lwjsd",
-			"X-Application-Version": project.version,
-			"X-Application-Build": "???"
-		)
+	test {
+		useJUnitPlatform()
 	}
-	from configurations.runtime.collect {
-		it.name.matches("(java-boot-.*.jar)") ? zipTree(it).matching { exclude "META-INF/**" } : it
+
+	jacoco {
+		toolVersion = "0.8.0"
 	}
-}
 
-task sourceJar(type: Jar) {
-	from sourceSets.main.allJava
-	classifier "sources"
-}
+	jacocoTestReport {
+		reports {
+			xml.enabled false
+			html.enabled true
+			html.destination file("${buildDir}/reports/jacoco")
+			csv.enabled false
+		}
+	}
 
-task javadocJar(type: Jar) {
-	from javadoc
-	classifier = "javadoc"
-}
+	task sourceJar(type: Jar) {
+		from sourceSets.main.allJava
+		classifier "sources"
+	}
 
-publishing {
-	publications {
-		Bintray(MavenPublication) {
-			from components.java
-			artifact sourceJar
-			artifact javadocJar
-			pom.withXml {
-				asNode().children().last() + {
-					resolveStrategy = Closure.DELEGATE_FIRST
-					name project.name
-					description projectDescription
-					url projectUrl
-					licenses {
-						license {
-							name projectLicense
-				            url projectLicenseUrl
-				            distribution "repo"
-				        }
-				    }
-				    developers {
-				        developer {
-				            id project.resolveProperty("developerId", "DEVELOPER_ID")
-				            name project.resolveProperty("developerName", "DEVELOPER_NAME")
-				            email project.resolveProperty("developerEmail", "DEVELOPER_EMAIL")
-				        }
-				    }
-				    scm {
-						url projectScmUrl
-				    }
+	task javadocJar(type: Jar) {
+		from javadoc
+		classifier = "javadoc"
+	}
+
+	publishing {
+		publications {
+			Bintray(MavenPublication) {
+				from components.java
+				artifact sourceJar
+				artifact javadocJar
+				pom.withXml {
+					asNode().children().last() + {
+						resolveStrategy = Closure.DELEGATE_FIRST
+						name project.name
+						description projectDescription
+						url projectUrl
+						licenses {
+							license {
+								name projectLicense
+								url projectLicenseUrl
+								distribution "repo"
+							}
+						}
+						developers {
+							developer {
+								id project.resolveProperty("developerId", "DEVELOPER_ID")
+								name project.resolveProperty("developerName", "DEVELOPER_NAME")
+								email project.resolveProperty("developerEmail", "DEVELOPER_EMAIL")
+							}
+						}
+						scm {
+							url projectScmUrl
+						}
+					}
 				}
 			}
 		}
 	}
-}
 
-artifactory {
-	contextUrl = "https://oss.jfrog.org/artifactory"
-	publish {
-		repository {
-			repoKey = (snapshotBuild ? "oss-snapshot-local" : "oss-release-local")
+	artifactory {
+		contextUrl = "https://oss.jfrog.org/artifactory"
+		publish {
+			repository {
+				repoKey = (snapshotBuild ? "oss-snapshot-local" : "oss-release-local")
+				username = project.resolveProperty("artifactory_user", "ARTIFACTORY_USER")
+				password = project.resolveProperty("artifactory_password", "ARTIFACTORY_PASSWORD")
+				maven = true
+			}
+			defaults {
+				publications("Bintray")
+			}
+		}
+		resolve {
+			repoKey = (snapshotBuild ? "libs-snapshot" : "libs-release")
 			username = project.resolveProperty("artifactory_user", "ARTIFACTORY_USER")
 			password = project.resolveProperty("artifactory_password", "ARTIFACTORY_PASSWORD")
 			maven = true
 		}
-		defaults {
-			publications("Bintray")
+		clientConfig.setIncludeEnvVars(false)
+	}
+
+	bintray {
+		user = project.resolveProperty("bintrayUser", "BINTRAY_USER")
+		key = project.resolveProperty("bintrayKey", "BINTRAY_KEY")
+		publications = [ "Bintray" ]
+		pkg {
+			repo = "maven"
+			name = project.name
+			licenses = [ projectLicenseId ]
+			vcsUrl = projectScmUrl
+			version {
+				gpg {
+					sign = true
+					passphrase = project.resolveProperty("bintrayGpgPassphrase", "BINTRAY_GPG_PASSPHRASE")
+				}
+			}
 		}
 	}
-	resolve {
-		repoKey = (snapshotBuild ? "libs-snapshot" : "libs-release")
-		username = project.resolveProperty("artifactory_user", "ARTIFACTORY_USER")
-		password = project.resolveProperty("artifactory_password", "ARTIFACTORY_PASSWORD")
-		maven = true
-	}
-	clientConfig.setIncludeEnvVars(false)
-}
 
-bintray {
-	user = project.resolveProperty("bintrayUser", "BINTRAY_USER")
-	key = project.resolveProperty("bintrayKey", "BINTRAY_KEY")
-	publications = [ "Bintray" ]
-	pkg {
-		repo = "maven"
-		name = project.name
-		licenses = [ projectLicenseId ]
-		vcsUrl = projectScmUrl
-		version {
-			gpg {
-				sign = true
-				passphrase = project.resolveProperty("bintrayGpgPassphrase", "BINTRAY_GPG_PASSPHRASE")
-            }
+	eclipse {
+		classpath {
+			downloadSources = true
+			downloadJavadoc = true
 		}
-	}
-}
-
-eclipse {
-	classpath {
-		downloadSources = true
-		downloadJavadoc = true
 	}
 }

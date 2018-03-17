@@ -13,7 +13,7 @@ os:
   - linux
   
 script:
-  - ./gradlew build sonarqube artifactoryPublish
+  - ./gradlew build artifactoryPublish sonarqube
 
 notifications:
   email:

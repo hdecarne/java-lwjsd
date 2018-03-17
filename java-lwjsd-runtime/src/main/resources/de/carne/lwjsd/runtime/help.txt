@@ -1,0 +1,16 @@
+Usage:
+	lwjsd --help
+	lwjsd --client [options] 
+	lwjsd --server [options]
+
+Commands:
+	--help
+	Shows this help message.
+
+	--client [options]
+	Connects to the server and performs the requested operations.
+
+	--server [options]
+	Starts up the server and waits for client requests.
+
+Options:

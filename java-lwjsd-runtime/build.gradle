@@ -1,0 +1,26 @@
+dependencies {
+	compile("de.carne.common:java-boot:2.+")
+	compile project(":java-lwjsd-api")
+	compile("javax.ws.rs:javax.ws.rs-api:2.1")
+	compile("org.glassfish.jersey.core:jersey-client:2.+")
+	compile("org.glassfish.jersey.core:jersey-server:2.+")
+	compile("org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.+")
+	compile("org.glassfish.jersey.media:jersey-media-json-jackson:2.+")
+	runtime("org.glassfish.jersey.inject:jersey-hk2:2.+")
+	runtime("javax.xml.bind:jaxb-api:2.3.0")
+	runtime("javax.activation:activation:1.1.1")
+}
+
+jar {
+	manifest {
+		attributes(
+			"Main-Class": "de.carne.boot.Application",
+			"X-Application-Name": "lwjsd",
+			"X-Application-Version": project.version,
+			"X-Application-Build": "???"
+		)
+	}
+	from configurations.runtime.collect {
+		it.name.matches("(java-boot-.*.jar)|(java-default-.*.jar)|(java-lwjsd-.*.jar)") ? zipTree(it).matching { exclude "META-INF/**" } : it
+	}
+}

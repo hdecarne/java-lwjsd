@@ -1,1 +1,4 @@
 rootProject.name = 'java-lwjsd'
+
+include 'java-lwjsd-api'
+include 'java-lwjsd-runtime'
