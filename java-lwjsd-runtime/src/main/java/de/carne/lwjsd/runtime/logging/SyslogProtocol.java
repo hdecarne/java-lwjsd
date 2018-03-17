@@ -22,12 +22,12 @@ package de.carne.lwjsd.runtime.logging;
 public enum SyslogProtocol {
 
 	/**
-	 * Syslog format according to <a href="https://www.ietf.org/rfc/rfc3164.txt">RFC 3164</> (The BSD syslog Protocol).
+	 * Syslog format according to <a href="https://www.ietf.org/rfc/rfc3164.txt">RFC 3164</a> (The BSD syslog Protocol).
 	 */
 	RFC3164,
 
 	/**
-	 * Syslog format according to <a href="https://www.ietf.org/rfc/rfc5424.txt">RFC 5424</> (The Syslog Protocol).
+	 * Syslog format according to <a href="https://www.ietf.org/rfc/rfc5424.txt">RFC 5424</a> (The Syslog Protocol).
 	 */
 	RFC5424
 

@@ -17,7 +17,7 @@
 package de.carne.lwjsd.api;
 
 /**
- * @param <R>
+ * @param <R> the actual request type.
  */
 public interface ServiceTrigger<R extends ServiceRequest> {
 
