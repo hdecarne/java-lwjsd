@@ -133,7 +133,7 @@ public class Server implements ServiceManager, AutoCloseable {
 
 			LOG.notice("Server up and running");
 
-			thread = Thread.currentThread();
+			thread = this.serverThread.set(Thread.currentThread());
 		} else {
 			thread = new Thread(() -> {
 				try {
@@ -150,7 +150,7 @@ public class Server implements ServiceManager, AutoCloseable {
 				wait(WAIT_TIMEOUT);
 			} while (this.state != ServiceManagerState.RUNNING);
 		}
-		return this.serverThread.set(thread);
+		return thread;
 	}
 
 	/**
