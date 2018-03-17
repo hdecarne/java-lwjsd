@@ -39,6 +39,7 @@ import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 
+import de.carne.check.Check;
 import de.carne.lwjsd.api.ServiceManager;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.api.ServiceManagerInitializationFailureException;
@@ -51,6 +52,7 @@ import de.carne.lwjsd.runtime.config.ConfigStore;
 import de.carne.lwjsd.runtime.config.SecretsStore;
 import de.carne.lwjsd.runtime.security.CharSecret;
 import de.carne.lwjsd.runtime.ws.ServiceManagerService;
+import de.carne.util.Exceptions;
 import de.carne.util.Late;
 import de.carne.util.SystemProperties;
 import de.carne.util.logging.Log;
@@ -76,12 +78,13 @@ public class Server implements ServiceManager, AutoCloseable {
 	private final SecretsStore secretsStore;
 	private final ConfigStore configStore;
 	private final BlockingQueue<Request> requests = new LinkedBlockingQueue<>(REQUEST_BACKLOG);
+	private final Late<Thread> serverThread = new Late<>();
 	private final Late<HttpServer> httpServer = new Late<>();
 
 	/**
 	 * Constructs new {@linkplain Server} instance.
 	 * <p>
-	 * Invoke {@linkplain #start()} to perform the actual server startup.
+	 * Invoke {@linkplain #start(boolean)} to perform the actual server startup.
 	 *
 	 * @param config the {@linkplain Config} instance to use.
 	 * @throws ServiceManagerException if an initialization error occurs during server setup.
@@ -97,23 +100,67 @@ public class Server implements ServiceManager, AutoCloseable {
 
 	/**
 	 * Starts the server and sets the control interface as well as all already configured services online.
+	 * <p>
+	 * If the server is started in the current thread the call is responsible for running the server request dispatch
+	 * loop by invoking {@linkplain #processRequest()} and {@linkplain #sleep()}..
 	 *
+	 * @param foreground whether to start the server in the current thread ({@code true}) or in a background thread.
+	 * @return the {@linkplain Thread} instance running the server.
 	 * @throws ServiceManagerException if the startup fails.
+	 * @throws InterruptedException if the thread is interrupted while waiting for the server startup.
+	 * @see #processRequest()
+	 * @see #sleep()
 	 */
-	public synchronized void start() throws ServiceManagerException {
+	public synchronized Thread start(boolean foreground) throws ServiceManagerException, InterruptedException {
 		if (this.state != ServiceManagerState.CONFIGURED) {
 			throw new ServiceManagerStartupFailureException(
 					"Server has already been started (status: " + this.state + ")");
 		}
 
-		LOG.info("Starting server...");
-		LOG.debug("Using {0}", this.configStore);
+		Thread thread;
 
-		this.state = ServiceManagerState.STARTING;
-		startHttpServer();
-		this.state = ServiceManagerState.RUNNING;
+		if (foreground) {
+			LOG.info("Starting server...");
+			LOG.debug("Using {0}", this.configStore);
 
-		LOG.notice("Server up and running");
+			this.state = ServiceManagerState.STARTING;
+			notifyAll();
+
+			startHttpServer();
+
+			this.state = ServiceManagerState.RUNNING;
+			notifyAll();
+
+			LOG.notice("Server up and running");
+
+			thread = Thread.currentThread();
+		} else {
+			thread = new Thread(() -> {
+				try {
+					start(true);
+					while (processRequest()) {
+						sleep();
+					}
+				} catch (ServiceManagerException | InterruptedException e) {
+					throw Exceptions.toRuntime(e);
+				}
+			}, toString());
+			thread.start();
+			do {
+				wait(WAIT_TIMEOUT);
+			} while (this.state != ServiceManagerState.RUNNING);
+		}
+		return this.serverThread.set(thread);
+	}
+
+	/**
+	 * Gets the {@linkplain Thread} running the server.
+	 *
+	 * @return the {@linkplain Thread} running the server.
+	 * @see #start(boolean)
+	 */
+	public Thread getServerThread() {
+		return this.serverThread.get();
 	}
 
 	/**
@@ -123,6 +170,8 @@ public class Server implements ServiceManager, AutoCloseable {
 	 * @throws ServiceManagerException if request processing fails.
 	 */
 	public synchronized boolean processRequest() throws ServiceManagerException {
+		Check.assertTrue(Thread.currentThread().equals(this.serverThread.get()));
+
 		Request request = this.requests.poll();
 
 		if (request != null) {
@@ -137,6 +186,8 @@ public class Server implements ServiceManager, AutoCloseable {
 	 * @throws InterruptedException if the sleep operation is interrupted.
 	 */
 	public synchronized void sleep() throws InterruptedException {
+		Check.assertTrue(Thread.currentThread().equals(this.serverThread.get()));
+
 		while (this.state == ServiceManagerState.RUNNING && this.requests.isEmpty()) {
 			this.wait(WAIT_TIMEOUT);
 		}
@@ -184,6 +235,11 @@ public class Server implements ServiceManager, AutoCloseable {
 			this.requests.clear();
 		}
 		this.httpServer.toOptional().ifPresent(HttpServer::shutdownNow);
+	}
+
+	@Override
+	public String toString() {
+		return "Server - " + this.configStore.getControlBaseUri();
 	}
 
 	private synchronized void submitRequest(Request request) throws ServiceManagerException {

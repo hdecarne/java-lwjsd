@@ -43,6 +43,7 @@ import de.carne.lwjsd.runtime.config.Config;
 import de.carne.lwjsd.runtime.config.ConfigStore;
 import de.carne.lwjsd.runtime.config.SecretsStore;
 import de.carne.lwjsd.runtime.security.CharSecret;
+import de.carne.lwjsd.runtime.ws.ServerStatus;
 import de.carne.lwjsd.runtime.ws.ServiceManagerService;
 import de.carne.lwjsd.runtime.ws.StatusMessage;
 import de.carne.util.Debug;
@@ -144,15 +145,24 @@ public final class Client implements ServiceManager, AutoCloseable {
 
 	@Override
 	public ServiceManagerState queryStatus() throws ServiceManagerException {
-		// TODO Auto-generated method stub
-		return null;
+		ServerStatus status;
+
+		try {
+			WebTarget queryStatusTarget = this.restClient.get().target(this.configStore.getControlBaseUri())
+					.path(ServiceManagerService.WEB_CONTEXT_PATH).path(ServiceManagerService.REQUEST_QUERY_STATUS);
+
+			status = checkRequestStatus(queryStatusTarget.request().get().readEntity(ServerStatus.class));
+		} catch (ProcessingException e) {
+			throw mapProcessingException(e);
+		}
+		return status.getServerState();
 	}
 
 	@Override
 	public void requestStop() throws ServiceManagerException {
 		try {
 			WebTarget requestStopTarget = this.restClient.get().target(this.configStore.getControlBaseUri())
-					.path(ServiceManagerService.WEB_CONTEXT_PATH).path("/requestStop");
+					.path(ServiceManagerService.WEB_CONTEXT_PATH).path(ServiceManagerService.REQUEST_STOP_PATH);
 
 			checkRequestStatus(requestStopTarget.request().get().readEntity(StatusMessage.class));
 		} catch (ProcessingException e) {

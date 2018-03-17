@@ -123,7 +123,7 @@ public class LwjsdMain implements ApplicationMain {
 
 	private int runServerCommand() throws InterruptedException, ServiceManagerException {
 		try (Server server = new Server(this.config)) {
-			server.start();
+			server.start(true);
 			while (server.processRequest()) {
 				server.sleep();
 			}

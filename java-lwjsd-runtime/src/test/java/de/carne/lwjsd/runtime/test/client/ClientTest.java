@@ -51,13 +51,13 @@ class ClientTest {
 		RuntimeConfig config = TestConfig.prepareConfig();
 
 		try (Server server = new Server(config); Client client = new Client(config)) {
-			server.start();
+			server.start(false);
 			client.connect();
 
+			Assertions.assertEquals(ServiceManagerState.RUNNING, client.queryStatus());
+
 			client.requestStop();
-			while (server.processRequest()) {
-				server.sleep();
-			}
+			server.getServerThread().join(1000);
 
 			Assertions.assertEquals(ServiceManagerState.STOPPED, server.queryStatus());
 		} finally {

@@ -52,6 +52,13 @@ public class ServiceManagerService {
 	public static final String PING_PATH = "ping";
 
 	/**
+	 * The QueryStatus command path.
+	 *
+	 * @see #queryStatus()
+	 */
+	public static final String REQUEST_QUERY_STATUS = "queryStatus";
+
+	/**
 	 * The RequestStop command path.
 	 *
 	 * @see #requestStop()
@@ -68,6 +75,25 @@ public class ServiceManagerService {
 	@Produces(MediaType.APPLICATION_JSON)
 	public StatusMessage ping() {
 		return new StatusMessage();
+	}
+
+	/**
+	 * Queries the server status.
+	 *
+	 * @return {@linkplain ServerStatus} object containing the server status.
+	 */
+	@GET
+	@Path(REQUEST_QUERY_STATUS)
+	@Produces(MediaType.APPLICATION_JSON)
+	public ServerStatus queryStatus() {
+		ServerStatus status = new ServerStatus();
+
+		try {
+			status.setServerState(getServer().queryStatus());
+		} catch (ServiceManagerException e) {
+			status.setStatusMessage(Exceptions.toString(e));
+		}
+		return status;
 	}
 
 	/**

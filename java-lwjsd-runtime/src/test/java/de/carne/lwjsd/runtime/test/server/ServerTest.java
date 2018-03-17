@@ -39,7 +39,7 @@ class ServerTest {
 		try (Server server = new Server(config)) {
 			Assertions.assertEquals(ServiceManagerState.CONFIGURED, server.queryStatus());
 
-			server.start();
+			server.start(true);
 
 			Assertions.assertEquals(ServiceManagerState.RUNNING, server.queryStatus());
 
