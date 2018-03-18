@@ -32,6 +32,7 @@ abstract class TypedConfigStoreOption<T> extends ConfigStoreOption implements Co
 		this.initialValue = this.currentValue = value;
 	}
 
+	@Override
 	public boolean isModified() {
 		return !this.initialValue.equals(this.currentValue);
 	}
@@ -44,6 +45,11 @@ abstract class TypedConfigStoreOption<T> extends ConfigStoreOption implements Co
 	@Override
 	public T get() {
 		return this.currentValue;
+	}
+
+	@Override
+	public String toString() {
+		return this.currentValue.toString();
 	}
 
 }

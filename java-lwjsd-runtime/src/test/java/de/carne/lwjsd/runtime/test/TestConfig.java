@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import de.carne.io.IOUtil;
+import de.carne.lwjsd.runtime.config.ConfigStore;
 import de.carne.lwjsd.runtime.config.Defaults;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
 import de.carne.nio.file.FileUtil;
@@ -53,6 +54,10 @@ public final class TestConfig {
 		try (InputStream sslKeyStoreStream = TestConfig.class.getResourceAsStream(config.getSslKeyStoreFile())) {
 			IOUtil.copyStream(config.getConfDir().resolve(config.getSslKeyStoreFile()).toFile(), sslKeyStoreStream);
 		}
+
+		ConfigStore configStore = ConfigStore.open(config);
+
+		configStore.storeConfigFile(config.getConfDir().resolve(ConfigStore.CONFIG_FILE));
 		System.out.println("Using test " + config);
 		return config;
 	}

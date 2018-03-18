@@ -43,6 +43,8 @@ abstract class ConfigStoreOption {
 		return this.persistent;
 	}
 
+	public abstract boolean isModified();
+
 	public abstract void loadFromString(String value);
 
 }

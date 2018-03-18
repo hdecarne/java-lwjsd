@@ -17,14 +17,17 @@
 package de.carne.lwjsd.runtime.config;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.nio.file.StandardOpenOption;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
+import de.carne.util.Exceptions;
 import de.carne.util.Strings;
 import de.carne.util.logging.Log;
 
@@ -35,7 +38,10 @@ public final class ConfigStore extends Config {
 
 	private static final Log LOG = new Log();
 
-	private static final String CONFIG_FILE = "lwjsd.conf";
+	/**
+	 * The {@linkplain ConfigStore} file name.
+	 */
+	public static final String CONFIG_FILE = "lwjsd.conf";
 
 	private final URIConfigStoreOption controlBaseUri;
 	private final StringConfigStoreOption sslProtocol;
@@ -43,14 +49,14 @@ public final class ConfigStore extends Config {
 	private final StringConfigStoreOption sslKeyStoreFile;
 	private final StringConfigStoreOption sslKeyStoreSecret;
 	private final PathConfigStoreOption stateDir;
-	private final Map<String, ConfigStoreOption> optionMap = new HashMap<>();
+	private final Map<String, ConfigStoreOption> optionMap = new LinkedHashMap<>();
 
 	private ConfigStore(Config config) {
 		this.controlBaseUri = new URIConfigStoreOption("controlBaseUri", true, config.getControlBaseUri());
 		this.sslProtocol = new StringConfigStoreOption("sslProtocol", true, config.getSslProtocol());
 		this.confDir = new PathConfigStoreOption("confDir", false, config.getConfDir());
 		this.sslKeyStoreFile = new StringConfigStoreOption("sslKeyStoreFile", true, config.getSslKeyStoreFile());
-		this.sslKeyStoreSecret = new StringConfigStoreOption(".sslKeyStoreSecret", true, config.getSslKeyStoreSecret());
+		this.sslKeyStoreSecret = new StringConfigStoreOption("sslKeyStoreSecret", true, config.getSslKeyStoreSecret());
 		this.stateDir = new PathConfigStoreOption("stateDir", false, config.getStateDir());
 		this.optionMap.put(this.controlBaseUri.name(), this.controlBaseUri);
 		this.optionMap.put(this.sslProtocol.name(), this.sslProtocol);
@@ -89,10 +95,71 @@ public final class ConfigStore extends Config {
 						continue;
 					}
 
+					boolean configLineProcessed = false;
+					String[] keyValue = Strings.split(configLine, '=', false);
+
+					if (keyValue.length == 2) {
+						String key = Strings.safeTrim(keyValue[0]);
+						String value = Strings.safeTrim(keyValue[1]);
+						ConfigStoreOption option = this.optionMap.get(key);
+
+						if (option != null && option.isPersistent()) {
+							try {
+								option.loadFromString(Strings.decode(value));
+								configLineProcessed = true;
+							} catch (IllegalArgumentException e) {
+								Exceptions.ignore(e);
+							}
+						}
+					}
+					if (!configLineProcessed) {
+						LOG.warning("Ignoring unrecognized or invalid configuration ''{0}''", configLine);
+					}
 				}
 			}
 		} else {
 			LOG.info("Ignoring non-existent config file ''{0}''", configFile);
+		}
+	}
+
+	/**
+	 * Store this {@ConfigStore} instance's configuration information into a file.
+	 * <p>
+	 * If the file does not yet exist, it will be created. If the file already exists, it will be overwritten.
+	 *
+	 * @param file the file to write to.
+	 * @throws IOException if an I/O error occurs during file access.
+	 */
+	public void storeConfigFile(Path file) throws IOException {
+		try (BufferedWriter out = Files.newBufferedWriter(file, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
+				StandardOpenOption.TRUNCATE_EXISTING)) {
+			out.write("#");
+			out.newLine();
+			out.write("# LWJSD config file");
+			out.newLine();
+			out.write("#");
+			out.newLine();
+			for (ConfigStoreOption option : this.optionMap.values()) {
+				if (option.isPersistent()) {
+					out.newLine();
+					out.write("#");
+					out.newLine();
+					out.write("# ");
+					out.write(option.name());
+					out.write(": ");
+					out.write(option.description());
+					out.newLine();
+					out.write("#");
+					out.newLine();
+					if (!option.isModified()) {
+						out.write("#");
+					}
+					out.write(option.name());
+					out.write(" = ");
+					out.write(Strings.encode(option.toString()));
+					out.newLine();
+				}
+			}
 		}
 	}
 
