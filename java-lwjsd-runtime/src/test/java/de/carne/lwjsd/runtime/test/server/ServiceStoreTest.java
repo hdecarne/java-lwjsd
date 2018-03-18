@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.carne.lwjsd.runtime.test.config;
+package de.carne.lwjsd.runtime.test.server;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
-import de.carne.lwjsd.runtime.config.ServiceStore;
+import de.carne.lwjsd.runtime.server.ServiceStore;
 import de.carne.lwjsd.runtime.test.TestConfig;
 
 /**
@@ -43,12 +43,10 @@ class ServiceStoreTest {
 			serviceStore1.registerService(Optional.empty(), getClass().getName(), false);
 
 			Assertions.assertEquals(1, serviceStore1.queryEntries().size());
-			Assertions.assertTrue(serviceStore1.queryEntry(getClass().getName()).isPresent());
 
 			ServiceStore serviceStore2 = ServiceStore.open(config);
 
 			Assertions.assertEquals(1, serviceStore2.queryEntries().size());
-			Assertions.assertTrue(serviceStore2.queryEntry(getClass().getName()).isPresent());
 
 			serviceStore2.registerService(Optional.empty(), getClass().getName(), false);
 

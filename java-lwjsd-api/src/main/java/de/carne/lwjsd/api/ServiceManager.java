@@ -75,7 +75,7 @@ public interface ServiceManager {
 	 * Stops a {@linkplain Service}.
 	 *
 	 * @param className the name of the {@linkplain Service} class to stop.
-	 * @throws ServiceManagerException if an error occurs while stoping the {@linkplain Service}.
+	 * @throws ServiceManagerException if an error occurs while stopping the {@linkplain Service}.
 	 */
 	void stopService(String className) throws ServiceManagerException;
 

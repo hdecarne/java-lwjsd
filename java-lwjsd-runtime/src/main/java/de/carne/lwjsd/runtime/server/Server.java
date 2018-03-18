@@ -47,7 +47,6 @@ import de.carne.lwjsd.api.ServiceManagerState;
 import de.carne.lwjsd.runtime.config.Config;
 import de.carne.lwjsd.runtime.config.ConfigStore;
 import de.carne.lwjsd.runtime.config.SecretsStore;
-import de.carne.lwjsd.runtime.config.ServiceStore;
 import de.carne.lwjsd.runtime.security.CharSecret;
 import de.carne.lwjsd.runtime.ws.ServiceManagerService;
 import de.carne.util.Exceptions;
@@ -250,8 +249,7 @@ public class Server implements ServiceManager, AutoCloseable {
 
 	@Override
 	public void startService(String className) throws ServiceManagerException {
-		// TODO Auto-generated method stub
-
+		this.serviceStore.startService(className, this, this.secretsStore);
 	}
 
 	@Override
@@ -275,7 +273,7 @@ public class Server implements ServiceManager, AutoCloseable {
 
 	@Override
 	public String toString() {
-		return "Server - " + this.configStore.getControlBaseUri();
+		return "Server " + this.configStore.getControlBaseUri();
 	}
 
 	private synchronized void submitRequest(Request request) throws ServiceManagerException {

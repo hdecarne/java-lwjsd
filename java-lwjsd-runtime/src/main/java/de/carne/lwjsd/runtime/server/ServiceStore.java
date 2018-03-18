@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.carne.lwjsd.runtime.config;
+package de.carne.lwjsd.runtime.server;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,14 +29,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
+import de.carne.check.Check;
 import de.carne.check.Nullable;
 import de.carne.lwjsd.api.Service;
+import de.carne.lwjsd.api.ServiceException;
+import de.carne.lwjsd.api.ServiceManager;
+import de.carne.lwjsd.api.ServiceManagerException;
+import de.carne.lwjsd.api.ServiceState;
+import de.carne.lwjsd.runtime.config.Config;
+import de.carne.lwjsd.runtime.config.SecretsStore;
 import de.carne.nio.file.attribute.FileAttributes;
 import de.carne.util.Strings;
 import de.carne.util.logging.Log;
 
 /**
- * This class provides the low level module and service management functions for server execution.
+ * This class provides the low level module and service management functions required for server execution.
  */
 public final class ServiceStore {
 
@@ -49,7 +56,7 @@ public final class ServiceStore {
 	private static final String SERVICE_START_FLAG_PATTERN = "service%1$d.startFlag";
 
 	/**
-	 * Information attributes of a single managed service.
+	 * Information attributes of a registered service.
 	 */
 	public abstract class Entry {
 
@@ -98,11 +105,12 @@ public final class ServiceStore {
 		}
 
 		/**
-		 * Checks whether the represented service is currently started.
+		 * Gets the current service state.
 		 *
-		 * @return {@code true} if the represented service is currently started.
+		 * @return the current service state.
+		 * @see ServiceState
 		 */
-		public abstract boolean isStarted();
+		public abstract ServiceState getState();
 
 		@Override
 		public String toString() {
@@ -127,7 +135,7 @@ public final class ServiceStore {
 
 	private class RuntimeEntry extends Entry {
 
-		private boolean started = false;
+		private ServiceState state = ServiceState.REGISTERED;
 		@Nullable
 		private Service service = null;
 
@@ -136,8 +144,17 @@ public final class ServiceStore {
 		}
 
 		@Override
-		public synchronized boolean isStarted() {
-			return this.started;
+		public ServiceState getState() {
+			return this.state;
+		}
+
+		public Service getService() {
+			return Check.notNull(this.service);
+		}
+
+		public void updateState(ServiceState state, @Nullable Service service) {
+			this.state = state;
+			this.service = service;
 		}
 
 	}
@@ -145,6 +162,7 @@ public final class ServiceStore {
 	private final Path modulesDir;
 	private final Path stateFile;
 	private final Map<String, RuntimeEntry> stateMap = new HashMap<>();
+	private final Map<String, ClassLoader> moduleMap = new HashMap<>();
 
 	private ServiceStore(Path modulesDir, Path stateFile) {
 		this.modulesDir = modulesDir;
@@ -272,14 +290,64 @@ public final class ServiceStore {
 		return new ArrayList<>(this.stateMap.values());
 	}
 
-	/**
-	 * Query the entry for a specific service.
-	 *
-	 * @param className the service class name to query.
-	 * @return the found service entry {@linkplain Optional} (may be empty).
-	 */
-	public synchronized Optional<Entry> queryEntry(String className) {
-		return Optional.ofNullable(this.stateMap.get(className));
+	public synchronized void startService(String className, ServiceManager serviceManager, SecretsStore secretsStore)
+			throws ServiceManagerException {
+		RuntimeEntry serviceEntry = this.stateMap.get(className);
+
+		if (serviceEntry == null) {
+			throw new ServiceManagerException("Failed to start unknown service ''{0}''", className);
+		}
+
+		if (serviceEntry.getState() == ServiceState.REGISTERED) {
+			LOG.info("Loading service ''{0}''", serviceEntry);
+
+			ClassLoader serviceLoader = getServiceLoader(serviceEntry.moduleName(), secretsStore);
+			Service service;
+
+			try {
+				service = serviceLoader.loadClass(className).asSubclass(Service.class).getConstructor().newInstance();
+				service.load(serviceManager);
+			} catch (ReflectiveOperationException | ServiceException e) {
+				throw new ServiceManagerException(e, "Failed to load server ''{0}''", serviceEntry);
+			}
+			serviceEntry.updateState(ServiceState.LOADED, service);
+
+			LOG.notice("Loaded service ''{0}''", serviceEntry);
+		}
+		if (serviceEntry.getState() == ServiceState.LOADED) {
+			LOG.info("Starting service ''{0}''", serviceEntry);
+
+			Service service = serviceEntry.getService();
+
+			try {
+				service.start(serviceManager);
+			} catch (ServiceException e) {
+				throw new ServiceManagerException(e, "Failed to start server ''{0}''", serviceEntry);
+			}
+			serviceEntry.updateState(ServiceState.RUNNING, service);
+
+			LOG.notice("Started service ''{0}''", serviceEntry);
+		}
+	}
+
+	private ClassLoader getServiceLoader(Optional<String> optionalModuleName, SecretsStore secretsStore)
+			throws ServiceManagerException {
+		ClassLoader serviceLoader;
+
+		if (optionalModuleName.isPresent()) {
+			String moduleName = optionalModuleName.get();
+
+			serviceLoader = this.moduleMap.get(moduleName);
+			if (serviceLoader == null) {
+				LOG.info("Loading module ''{0}''...", moduleName);
+
+				// TODO
+				serviceLoader = Thread.currentThread().getContextClassLoader();
+			}
+		} else {
+			serviceLoader = Thread.currentThread().getContextClassLoader();
+		}
+		return serviceLoader;
 	}
 
 }
