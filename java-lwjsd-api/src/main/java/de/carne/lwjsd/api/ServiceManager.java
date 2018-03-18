@@ -25,7 +25,7 @@ public interface ServiceManager {
 	 * Query the current status of the {@linkplain ServiceManager}.
 	 *
 	 * @return the current status of the {@linkplain ServiceManager}.
-	 * @throws ServiceManagerException if the state could not be retrieved.
+	 * @throws ServiceManagerException if an error occurs while querying the {@linkplain ServiceManager} status.
 	 * @see ServiceManagerState
 	 */
 	ServiceManagerState queryStatus() throws ServiceManagerException;
@@ -33,8 +33,50 @@ public interface ServiceManager {
 	/**
 	 * Requests a stop of the {@linkplain ServiceManager} including all running services.
 	 *
-	 * @throws ServiceManagerException if the stop request fails.
+	 * @throws ServiceManagerException if an error occurs while stopping the {@linkplain ServiceManager}.
 	 */
 	void requestStop() throws ServiceManagerException;
+
+	/**
+	 * Loads and optionally starts a {@linkplain Service} from the runtime's classpath.
+	 * <p>
+	 * This function requires that the requested {@linkplain Service} module is already contained in the runtime's
+	 * classpath.
+	 *
+	 * @param className the name of the {@linkplain Service} class to deploy.
+	 * @param start whether to load and start ({@code true}) or only load ({@code false}) the {@linkplain Service}
+	 *        class.
+	 * @throws ServiceManagerException if an error occurs while deploying the {@linkplain Service}.
+	 * @see #startService(String)
+	 */
+	void deployService(String className, boolean start) throws ServiceManagerException;
+
+	/**
+	 * Loads and optionally starts a {@linkplain Service} from an external module.
+	 *
+	 * @param moduleName the name of the module providing the {@linkplain Service} related classes.
+	 * @param className the name of the {@linkplain Service} class to deploy.
+	 * @param start whether to load and start ({@code true}) or only load ({@code false}) the {@linkplain Service}
+	 *        class.
+	 * @throws ServiceManagerException if an error occurs while deploying the {@linkplain Service}.
+	 * @see #startService(String)
+	 */
+	void deployService(String moduleName, String className, boolean start) throws ServiceManagerException;
+
+	/**
+	 * Starts a {@linkplain Service}.
+	 *
+	 * @param className the name of the {@linkplain Service} class to start.
+	 * @throws ServiceManagerException if an error occurs while starting the {@linkplain Service}.
+	 */
+	void startService(String className) throws ServiceManagerException;
+
+	/**
+	 * Stops a {@linkplain Service}.
+	 *
+	 * @param className the name of the {@linkplain Service} class to stop.
+	 * @throws ServiceManagerException if an error occurs while stoping the {@linkplain Service}.
+	 */
+	void stopService(String className) throws ServiceManagerException;
 
 }

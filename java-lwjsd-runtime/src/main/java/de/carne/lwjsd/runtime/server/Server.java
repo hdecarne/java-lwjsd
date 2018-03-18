@@ -25,6 +25,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -42,14 +43,11 @@ import org.glassfish.jersey.server.ResourceConfig;
 import de.carne.check.Check;
 import de.carne.lwjsd.api.ServiceManager;
 import de.carne.lwjsd.api.ServiceManagerException;
-import de.carne.lwjsd.api.ServiceManagerInitializationFailureException;
-import de.carne.lwjsd.api.ServiceManagerOperationFailureException;
-import de.carne.lwjsd.api.ServiceManagerShutdownFailureException;
-import de.carne.lwjsd.api.ServiceManagerStartupFailureException;
 import de.carne.lwjsd.api.ServiceManagerState;
 import de.carne.lwjsd.runtime.config.Config;
 import de.carne.lwjsd.runtime.config.ConfigStore;
 import de.carne.lwjsd.runtime.config.SecretsStore;
+import de.carne.lwjsd.runtime.config.ServiceStore;
 import de.carne.lwjsd.runtime.security.CharSecret;
 import de.carne.lwjsd.runtime.ws.ServiceManagerService;
 import de.carne.util.Exceptions;
@@ -77,6 +75,7 @@ public class Server implements ServiceManager, AutoCloseable {
 	private volatile ServiceManagerState state = ServiceManagerState.CONFIGURED;
 	private final SecretsStore secretsStore;
 	private final ConfigStore configStore;
+	private final ServiceStore serviceStore;
 	private final BlockingQueue<Request> requests = new LinkedBlockingQueue<>(REQUEST_BACKLOG);
 	private final Late<Thread> serverThread = new Late<>();
 	private final Late<HttpServer> httpServer = new Late<>();
@@ -93,8 +92,9 @@ public class Server implements ServiceManager, AutoCloseable {
 		try {
 			this.secretsStore = SecretsStore.open(config);
 			this.configStore = ConfigStore.open(config);
+			this.serviceStore = ServiceStore.open(config);
 		} catch (IOException | GeneralSecurityException e) {
-			throw new ServiceManagerInitializationFailureException("Failed to open required store", e);
+			throw new ServiceManagerException(e, "Failed to open required store");
 		}
 	}
 
@@ -113,8 +113,7 @@ public class Server implements ServiceManager, AutoCloseable {
 	 */
 	public synchronized Thread start(boolean foreground) throws ServiceManagerException, InterruptedException {
 		if (this.state != ServiceManagerState.CONFIGURED) {
-			throw new ServiceManagerStartupFailureException(
-					"Server has already been started (status: " + this.state + ")");
+			throw new ServiceManagerException("Server has already been started (status: ''{0}''", this.state);
 		}
 
 		Thread thread;
@@ -207,7 +206,7 @@ public class Server implements ServiceManager, AutoCloseable {
 		try {
 			this.httpServer.get().shutdown(WAIT_TIMEOUT, TimeUnit.MILLISECONDS).get();
 		} catch (ExecutionException | InterruptedException e) {
-			throw new ServiceManagerShutdownFailureException("HTTP server shutdown failed", e);
+			throw new ServiceManagerException(e, "HTTP server shutdown failed");
 		}
 		this.state = ServiceManagerState.STOPPED;
 
@@ -225,13 +224,50 @@ public class Server implements ServiceManager, AutoCloseable {
 	}
 
 	@Override
+	public void deployService(String className, boolean start) throws ServiceManagerException {
+		deployService(Optional.empty(), className, start);
+	}
+
+	@Override
+	public void deployService(String moduleName, String className, boolean start) throws ServiceManagerException {
+		deployService(Optional.of(moduleName), className, start);
+	}
+
+	private void deployService(Optional<String> moduleName, String className, boolean start)
+			throws ServiceManagerException {
+		String serviceName = ServiceStore.formatServiceName(moduleName, className);
+
+		LOG.info("Deploying service ''{0}''", serviceName);
+		try {
+			this.serviceStore.registerService(moduleName, className, false);
+		} catch (IOException e) {
+			throw new ServiceManagerException(e, "Failed to register service ''{0}''", serviceName);
+		}
+		if (start) {
+			startService(className);
+		}
+	}
+
+	@Override
+	public void startService(String className) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void stopService(String className) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
 	public synchronized void close() {
 		LOG.info("Cleaning up server resources...");
 
 		int pendingRequestCount = this.requests.size();
 
 		if (pendingRequestCount > 0) {
-			LOG.warning("Discarding {} unprocessed server requests", pendingRequestCount);
+			LOG.warning("Discarding {0} unprocessed server requests", pendingRequestCount);
 			this.requests.clear();
 		}
 		this.httpServer.toOptional().ifPresent(HttpServer::shutdownNow);
@@ -246,7 +282,7 @@ public class Server implements ServiceManager, AutoCloseable {
 		try {
 			this.requests.add(request);
 		} catch (IllegalStateException e) {
-			throw new ServiceManagerOperationFailureException("Too many unprocessed requests", e);
+			throw new ServiceManagerException(e, "Too many unprocessed requests");
 		}
 		notifyAll();
 	}
@@ -278,7 +314,7 @@ public class Server implements ServiceManager, AutoCloseable {
 
 			server.start();
 		} catch (IOException e) {
-			throw new ServiceManagerStartupFailureException("Failed to start HTTP server", e);
+			throw new ServiceManagerException(e, "Failed to start HTTP server");
 		}
 
 		LOG.info("HTTP server up and running");
@@ -312,7 +348,7 @@ public class Server implements ServiceManager, AutoCloseable {
 			sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
 			sslEngineConfigurator = new SSLEngineConfigurator(sslContext, false, true, true);
 		} catch (IOException | GeneralSecurityException e) {
-			throw new ServiceManagerStartupFailureException("Failed to setup SSL engine", e);
+			throw new ServiceManagerException(e, "Failed to setup SSL engine");
 		}
 		return sslEngineConfigurator;
 	}

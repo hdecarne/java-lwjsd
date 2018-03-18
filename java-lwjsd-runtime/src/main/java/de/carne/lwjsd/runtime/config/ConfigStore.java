@@ -32,7 +32,7 @@ import de.carne.util.Strings;
 import de.carne.util.logging.Log;
 
 /**
- * This class provides access to all necessary data used during client and server execution.
+ * This class provides access to all necessary configuration data used during client and server execution.
  */
 public final class ConfigStore extends Config {
 
@@ -67,11 +67,11 @@ public final class ConfigStore extends Config {
 	}
 
 	/**
-	 * Constructs new {@linkplain ConfigStore} instance.
+	 * Creates a new {@linkplain ConfigStore} instance.
 	 *
 	 * @param config the {@linkplain Config} object to use for store initialization.
-	 * @return the new {@linkplain ConfigStore} instance.
-	 * @throws IOException if an I/O error occurs during configuration data access.
+	 * @return the created {@linkplain ConfigStore} instance.
+	 * @throws IOException if an I/O error occurs while accessing the store data.
 	 */
 	public static ConfigStore open(Config config) throws IOException {
 		ConfigStore configStore = new ConfigStore(config);
@@ -91,34 +91,36 @@ public final class ConfigStore extends Config {
 
 				while ((configLine = configReader.readLine()) != null) {
 					configLine = configLine.trim();
-					if (Strings.isEmpty(configLine) || configLine.startsWith("#")) {
-						continue;
-					}
-
-					boolean configLineProcessed = false;
-					String[] keyValue = Strings.split(configLine, '=', false);
-
-					if (keyValue.length == 2) {
-						String key = Strings.safeTrim(keyValue[0]);
-						String value = Strings.safeTrim(keyValue[1]);
-						ConfigStoreOption option = this.optionMap.get(key);
-
-						if (option != null && option.isPersistent()) {
-							try {
-								option.loadFromString(Strings.decode(value));
-								configLineProcessed = true;
-							} catch (IllegalArgumentException e) {
-								Exceptions.ignore(e);
-							}
-						}
-					}
-					if (!configLineProcessed) {
-						LOG.warning("Ignoring unrecognized or invalid configuration ''{0}''", configLine);
+					if (!Strings.isEmpty(configLine) && !configLine.startsWith("#")) {
+						loadConfigLine(configLine);
 					}
 				}
 			}
 		} else {
 			LOG.info("Ignoring non-existent config file ''{0}''", configFile);
+		}
+	}
+
+	private void loadConfigLine(String configLine) {
+		boolean configLineProcessed = false;
+		String[] keyValue = Strings.split(configLine, '=', false);
+
+		if (keyValue.length == 2) {
+			String key = Strings.safeTrim(keyValue[0]);
+			String value = Strings.safeTrim(keyValue[1]);
+			ConfigStoreOption option = this.optionMap.get(key);
+
+			if (option != null && option.isPersistent()) {
+				try {
+					option.loadFromString(Strings.decode(value));
+					configLineProcessed = true;
+				} catch (IllegalArgumentException e) {
+					Exceptions.ignore(e);
+				}
+			}
+		}
+		if (!configLineProcessed) {
+			LOG.warning("Ignoring unrecognized or invalid configuration ''{0}''", configLine);
 		}
 	}
 

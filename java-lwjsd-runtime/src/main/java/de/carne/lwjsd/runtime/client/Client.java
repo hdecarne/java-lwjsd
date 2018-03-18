@@ -34,10 +34,7 @@ import javax.ws.rs.client.WebTarget;
 import org.glassfish.jersey.jackson.JacksonFeature;
 
 import de.carne.lwjsd.api.ServiceManager;
-import de.carne.lwjsd.api.ServiceManagerClientFailureException;
 import de.carne.lwjsd.api.ServiceManagerException;
-import de.carne.lwjsd.api.ServiceManagerInitializationFailureException;
-import de.carne.lwjsd.api.ServiceManagerStartupFailureException;
 import de.carne.lwjsd.api.ServiceManagerState;
 import de.carne.lwjsd.runtime.config.Config;
 import de.carne.lwjsd.runtime.config.ConfigStore;
@@ -74,7 +71,7 @@ public final class Client implements ServiceManager, AutoCloseable {
 			this.secretsStore = SecretsStore.open(config);
 			this.configStore = ConfigStore.open(config);
 		} catch (IOException | GeneralSecurityException e) {
-			throw new ServiceManagerInitializationFailureException("Failed to open required store", e);
+			throw new ServiceManagerException(e, "Failed to open required store");
 		}
 	}
 
@@ -127,7 +124,7 @@ public final class Client implements ServiceManager, AutoCloseable {
 			sslContext = SSLContext.getInstance(this.configStore.getSslProtocol());
 			sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
 		} catch (IOException | GeneralSecurityException e) {
-			throw new ServiceManagerStartupFailureException("Failed to setup SSL context", e);
+			throw new ServiceManagerException(e, "Failed to setup SSL context");
 		}
 		return sslContext;
 	}
@@ -171,6 +168,30 @@ public final class Client implements ServiceManager, AutoCloseable {
 	}
 
 	@Override
+	public void deployService(String className, boolean start) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void deployService(String moduleName, String className, boolean start) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void startService(String className) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void stopService(String className) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
 	public void close() {
 		URI controlBaseUri = this.configStore.getControlBaseUri();
 
@@ -187,7 +208,7 @@ public final class Client implements ServiceManager, AutoCloseable {
 		if (!StatusMessage.OK.equals(status)) {
 			String restCall = Debug.getCaller();
 
-			throw new ServiceManagerClientFailureException("REST call " + restCall + " failed: " + status);
+			throw new ServiceManagerException("REST call {0} failed (status: ''{1}'')", restCall, status);
 		} else if (LOG.isDebugLoggable()) {
 			LOG.debug("REST call {0} (status: ''{1}'')", Debug.getCaller(), requestStatus.getStatusMessage());
 		}
@@ -199,8 +220,7 @@ public final class Client implements ServiceManager, AutoCloseable {
 		String restCall = Debug.getCaller();
 		URI controlBaseUri = this.configStore.getControlBaseUri();
 
-		return new ServiceManagerClientFailureException(
-				"REST call " + restCall + " to server '" + controlBaseUri + "' failed", e);
+		return new ServiceManagerException(e, "REST call {0} to server ''{1}'' failed", restCall, controlBaseUri);
 	}
 
 }

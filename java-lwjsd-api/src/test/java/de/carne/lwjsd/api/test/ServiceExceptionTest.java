@@ -19,22 +19,21 @@ package de.carne.lwjsd.api.test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import de.carne.lwjsd.api.ServiceManagerException;
+import de.carne.lwjsd.api.ServiceException;
 
 /**
- * Test {@linkplain ServiceManagerException} class.
+ * Test {@linkplain ServiceException} class.
  */
-class ServiceManagerExceptionTest {
+class ServiceExceptionTest {
 
 	@Test
-	void testServiceManagerException() {
-		Assertions.assertEquals(getClass().getName(), new ServiceManagerException(getClass().getName()).getMessage());
+	void testServiceException() {
+		Assertions.assertEquals(getClass().getName(), new ServiceException(getClass().getName()).getMessage());
 
 		Throwable cause = new IllegalStateException();
 
-		Assertions.assertEquals(cause.getClass().getName(), new ServiceManagerException(cause).getMessage());
-		Assertions.assertEquals(getClass().getName(),
-				new ServiceManagerException(cause, getClass().getName()).getMessage());
+		Assertions.assertEquals(cause.getClass().getName(), new ServiceException(cause).getMessage());
+		Assertions.assertEquals(getClass().getName(), new ServiceException(cause, getClass().getName()).getMessage());
 	}
 
 }

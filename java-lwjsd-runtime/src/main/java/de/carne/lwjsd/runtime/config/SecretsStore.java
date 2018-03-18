@@ -66,66 +66,6 @@ public final class SecretsStore {
 	 * @throws GeneralSecurityException if an security error occurs while accessing the store data.
 	 */
 	public static SecretsStore open(Config config) throws IOException, GeneralSecurityException {
-		Map<String, Cipher> cipherMap = initCiphers(config);
-
-		return new SecretsStore(cipherMap);
-	}
-
-	/**
-	 * Encrypts a character based secret using the default cipher.
-	 *
-	 * @param plainSecret the secret to encrypt.
-	 * @return the encrypted secret.
-	 * @throws GeneralSecurityException if a security error occurs during encryption.
-	 */
-	public String encryptSecret(CharSecret plainSecret) throws GeneralSecurityException {
-		Cipher cipher = this.cipherMap.get(DEFAULT_CIPHER);
-		StringBuilder encryptedSecret = new StringBuilder();
-
-		encryptedSecret.append(SECRET_PREFIX);
-		encryptedSecret.append(DEFAULT_CIPHER);
-		encryptedSecret.append(":");
-		encryptedSecret.append(Base64.getEncoder().encodeToString(cipher.encryptChars(plainSecret.get())));
-		return encryptedSecret.toString();
-	}
-
-	/**
-	 * Decrypts a character based secret.
-	 * <p>
-	 * This function detects automatically which encryption cipher has been applied to the secret or if it is not
-	 * encrypted at all.
-	 *
-	 * @param encryptedSecret the secret string (either plain or encrypted).
-	 * @return the decrypted secret.
-	 * @throws GeneralSecurityException if a security error occurs during decryption.
-	 */
-	public CharSecret decryptSecret(String encryptedSecret) throws GeneralSecurityException {
-		char[] plainSecret;
-
-		if (encryptedSecret.startsWith(SECRET_PREFIX)) {
-			int dataIndex = encryptedSecret.indexOf(':', SECRET_PREFIX.length() + 1);
-
-			if (dataIndex <= SECRET_PREFIX.length()) {
-				throw new IllegalArgumentException("Invalid secret: '" + encryptedSecret + "'");
-			}
-
-			String cipherName = encryptedSecret.substring(SECRET_PREFIX.length(), dataIndex);
-			Cipher cipher = this.cipherMap.get(cipherName);
-
-			if (cipher == null) {
-				throw new NoSuchAlgorithmException("Unrecognized cipher: " + cipherName);
-			}
-
-			String data = encryptedSecret.substring(dataIndex + 1);
-
-			plainSecret = cipher.decryptChars(Base64.getDecoder().decode(data));
-		} else {
-			plainSecret = encryptedSecret.toCharArray();
-		}
-		return CharSecret.wrap(plainSecret);
-	}
-
-	private static Map<String, Cipher> initCiphers(Config config) throws IOException, GeneralSecurityException {
 		Path stateDir = config.getStateDir();
 
 		Files.createDirectories(stateDir, FileAttributes.userDirectoryDefault(stateDir));
@@ -182,7 +122,61 @@ public final class SecretsStore {
 			}
 			LOG.notice("Created/updated ciphers have been written to file ''{0}''...", ciphersFile);
 		}
-		return cipherMap;
+		return new SecretsStore(cipherMap);
+	}
+
+	/**
+	 * Encrypts a character based secret using the default cipher.
+	 *
+	 * @param plainSecret the secret to encrypt.
+	 * @return the encrypted secret.
+	 * @throws GeneralSecurityException if a security error occurs during encryption.
+	 */
+	public String encryptSecret(CharSecret plainSecret) throws GeneralSecurityException {
+		Cipher cipher = this.cipherMap.get(DEFAULT_CIPHER);
+		StringBuilder encryptedSecret = new StringBuilder();
+
+		encryptedSecret.append(SECRET_PREFIX);
+		encryptedSecret.append(DEFAULT_CIPHER);
+		encryptedSecret.append(":");
+		encryptedSecret.append(Base64.getEncoder().encodeToString(cipher.encryptChars(plainSecret.get())));
+		return encryptedSecret.toString();
+	}
+
+	/**
+	 * Decrypts a character based secret.
+	 * <p>
+	 * This function detects automatically which encryption cipher has been applied to the secret or if it is not
+	 * encrypted at all.
+	 *
+	 * @param encryptedSecret the secret string (either plain or encrypted).
+	 * @return the decrypted secret.
+	 * @throws GeneralSecurityException if a security error occurs during decryption.
+	 */
+	public CharSecret decryptSecret(String encryptedSecret) throws GeneralSecurityException {
+		char[] plainSecret;
+
+		if (encryptedSecret.startsWith(SECRET_PREFIX)) {
+			int dataIndex = encryptedSecret.indexOf(':', SECRET_PREFIX.length() + 1);
+
+			if (dataIndex <= SECRET_PREFIX.length()) {
+				throw new IllegalArgumentException("Invalid secret: '" + encryptedSecret + "'");
+			}
+
+			String cipherName = encryptedSecret.substring(SECRET_PREFIX.length(), dataIndex);
+			Cipher cipher = this.cipherMap.get(cipherName);
+
+			if (cipher == null) {
+				throw new NoSuchAlgorithmException("Unrecognized cipher: " + cipherName);
+			}
+
+			String data = encryptedSecret.substring(dataIndex + 1);
+
+			plainSecret = cipher.decryptChars(Base64.getDecoder().decode(data));
+		} else {
+			plainSecret = encryptedSecret.toCharArray();
+		}
+		return CharSecret.wrap(plainSecret);
 	}
 
 	private static Cipher decodeCipher(CipherFactory cipherFactory, @Nullable String cipherData)

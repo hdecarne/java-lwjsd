@@ -16,40 +16,46 @@
  */
 package de.carne.lwjsd.api;
 
+import java.text.MessageFormat;
+
 /**
- * This exception indicates an error during ServiceManager operation.
+ * This exception indicates an error during {@linkplain Service} operation.
  */
-public class ServiceManagerOperationFailureException extends ServiceManagerException {
+public class ServiceException extends Exception {
 
 	// Serialization support
-	private static final long serialVersionUID = -8612424502439213058L;
+	private static final long serialVersionUID = -2408713377102975667L;
 
 	/**
-	 * Constructs {@linkplain ServiceManagerOperationFailureException}.
+	 * Constructs {@linkplain ServiceException}.
 	 *
-	 * @param message the exception message.
+	 * @param pattern the exception message pattern.
+	 * @param arguments the exception message arguments.
+	 * @see MessageFormat
 	 */
-	public ServiceManagerOperationFailureException(String message) {
-		super(message);
+	public ServiceException(String pattern, Object... arguments) {
+		super(MessageFormat.format(pattern, arguments));
 	}
 
 	/**
-	 * Constructs {@linkplain ServiceManagerOperationFailureException}.
+	 * Constructs {@linkplain ServiceException}.
 	 *
 	 * @param cause the causing exception.
 	 */
-	public ServiceManagerOperationFailureException(Throwable cause) {
+	public ServiceException(Throwable cause) {
 		super(cause);
 	}
 
 	/**
-	 * Constructs {@linkplain ServiceManagerOperationFailureException}.
+	 * Constructs {@linkplain ServiceException}.
 	 *
-	 * @param message the exception message.
 	 * @param cause the causing exception.
+	 * @param pattern the exception message pattern.
+	 * @param arguments the exception message arguments.
+	 * @see MessageFormat
 	 */
-	public ServiceManagerOperationFailureException(String message, Throwable cause) {
-		super(message, cause);
+	public ServiceException(Throwable cause, String pattern, Object... arguments) {
+		super(MessageFormat.format(pattern, arguments), cause);
 	}
 
 }
