@@ -123,7 +123,7 @@ public final class ConfigStore extends Config {
 	}
 
 	/**
-	 * Store this {@ConfigStore} instance's configuration information into a file.
+	 * Store this {@linkplain ConfigStore} instance's configuration information into a file.
 	 * <p>
 	 * If the file does not yet exist, it will be created. If the file already exists, it will be overwritten.
 	 *
