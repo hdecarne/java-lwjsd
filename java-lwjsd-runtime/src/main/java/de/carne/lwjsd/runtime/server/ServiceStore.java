@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -98,6 +99,7 @@ final class ServiceStore {
 				serviceStore.restoreServiceRegistration(jsonService);
 			}
 		}
+		serviceStore.autoDiscoverServices(RUNTIME_MODULE_NAME);
 		serviceStore.syncStore0();
 		return serviceStore;
 	}
@@ -156,15 +158,7 @@ final class ServiceStore {
 	}
 
 	public synchronized void registerService(ServiceId serviceId, boolean autoStartFlag) {
-		LOG.info("Registering service ''{0}''...", serviceId);
-
-		if (!this.serviceInstances.containsKey(serviceId)) {
-			this.serviceInstances.put(serviceId, new ServiceInstance(this.serviceFactory, serviceId, autoStartFlag));
-
-			LOG.notice("Service ''{0}'' registered", serviceId);
-		} else {
-			LOG.info("Service ''{0}'' already registered", serviceId);
-		}
+		registerService0(serviceId, null, autoStartFlag);
 	}
 
 	public synchronized <T extends Service> T getService(Class<T> serviceClass) throws ServiceManagerException {
@@ -308,7 +302,22 @@ final class ServiceStore {
 
 		LOG.info("Restoring service registration ''{0}''...", serviceId);
 
-		registerService(serviceId, jsonService.getAutoStartFlag());
+		registerService0(serviceId, null, jsonService.getAutoStartFlag());
+	}
+
+	private void registerService0(ServiceId serviceId, @Nullable Service service, boolean autoStartFlag) {
+		LOG.info("Registering service ''{0}''...", serviceId);
+
+		if (!this.serviceInstances.containsKey(serviceId)) {
+			if (service != null) {
+				this.serviceCache.put(serviceId, service);
+			}
+			this.serviceInstances.put(serviceId, new ServiceInstance(this.serviceFactory, serviceId, autoStartFlag));
+
+			LOG.notice("Service ''{0}'' registered", serviceId);
+		} else {
+			LOG.info("Service ''{0}'' already registered", serviceId);
+		}
 	}
 
 	private ClassLoader loadModule(String moduleName) {
@@ -318,6 +327,19 @@ final class ServiceStore {
 			throw Check.fail();
 		}
 		return loader;
+	}
+
+	private void autoDiscoverServices(String moduleName) {
+		LOG.info("Auto discovering services for module ''{0}''...", moduleName);
+
+		ClassLoader loader = this.moduleCache.get(moduleName);
+		ServiceLoader<Service> services = ServiceLoader.load(Service.class, loader);
+
+		for (Service service : services) {
+			ServiceId serviceId = new ServiceId(moduleName, service);
+
+			registerService0(serviceId, service, true);
+		}
 	}
 
 	private Service getService(ServiceId serviceId) throws ServiceManagerException {
