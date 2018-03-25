@@ -46,6 +46,10 @@ subprojects {
 
 	test {
 		useJUnitPlatform()
+		testLogging {
+			events "failed"
+			exceptionFormat "full"
+		}
 	}
 
 	jacoco {
