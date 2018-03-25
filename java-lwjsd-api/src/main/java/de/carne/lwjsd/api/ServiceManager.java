@@ -17,66 +17,75 @@
 package de.carne.lwjsd.api;
 
 /**
- * The {@linkplain ServiceManager} class provides the central functions for service management.
+ * This interface provides the necessary functions for managing the {@linkplain Service} execution environment.
  */
 public interface ServiceManager {
 
 	/**
-	 * Query the current status of the {@linkplain ServiceManager}.
+	 * Queries the status of this {@linkplain ServiceManager} instance.
 	 *
-	 * @return the current status of the {@linkplain ServiceManager}.
+	 * @return the status of this {@linkplain ServiceManager} instance.
 	 * @throws ServiceManagerException if an error occurs while querying the {@linkplain ServiceManager} status.
-	 * @see ServiceManagerState
 	 */
-	ServiceManagerState queryStatus() throws ServiceManagerException;
+	ServiceManagerInfo queryStatus() throws ServiceManagerException;
 
 	/**
-	 * Requests a stop of the {@linkplain ServiceManager} including all running services.
+	 * Requests a stop of the {@linkplain ServiceManager} including all running {@linkplain Service}s.
 	 *
 	 * @throws ServiceManagerException if an error occurs while stopping the {@linkplain ServiceManager}.
 	 */
 	void requestStop() throws ServiceManagerException;
 
 	/**
-	 * Loads and optionally starts a {@linkplain Service} from the runtime's classpath.
-	 * <p>
-	 * This function requires that the requested {@linkplain Service} module is already contained in the runtime's
-	 * classpath.
+	 * Registers a new {@linkplain Service} module into this {@linkplain ServiceManager}.
 	 *
-	 * @param className the name of the {@linkplain Service} class to deploy.
-	 * @param start whether to load and start ({@code true}) or only load ({@code false}) the {@linkplain Service}
-	 *        class.
-	 * @throws ServiceManagerException if an error occurs while deploying the {@linkplain Service}.
-	 * @see #startService(String)
+	 * @param file the file name of the {@linkplain Service} module to register.
+	 * @param overwrite whether to overwrite an already registered {@linkplain Service} module with the same name.
+	 * @return the registered module name.
+	 * @throws ServiceManagerException if an error occurs while installing the {@linkplain Service} module.
 	 */
-	void deployService(String className, boolean start) throws ServiceManagerException;
+	String registerModule(String file, boolean overwrite) throws ServiceManagerException;
 
 	/**
-	 * Loads and optionally starts a {@linkplain Service} from an external module.
+	 * Loads an already registered {@linkplain Service} module and registers the provided {@linkplain Service}s.
 	 *
-	 * @param moduleName the name of the module providing the {@linkplain Service} related classes.
-	 * @param className the name of the {@linkplain Service} class to deploy.
-	 * @param start whether to load and start ({@code true}) or only load ({@code false}) the {@linkplain Service}
-	 *        class.
-	 * @throws ServiceManagerException if an error occurs while deploying the {@linkplain Service}.
-	 * @see #startService(String)
+	 * @param moduleName the name of the {@linkplain Service} module to load.
+	 * @throws ServiceManagerException if an error occurs while loading the {@linkplain Service} module.
 	 */
-	void deployService(String moduleName, String className, boolean start) throws ServiceManagerException;
+	void loadModule(String moduleName) throws ServiceManagerException;
+
+	/**
+	 * Deletes an already registered {@linkplain Service} module.
+	 *
+	 * @param moduleName the name of the {@linkplain Service} module to delete.
+	 * @throws ServiceManagerException if an error occurs while deleting the {@linkplain Service} module.
+	 */
+	void deleteModule(String moduleName) throws ServiceManagerException;
+
+	/**
+	 * Registers a {@linkplain Service} provided by the current runtime environment.
+	 *
+	 * @param className the name of the class providing the {@linkplain Service}.
+	 * @return the registered service id.
+	 * @throws ServiceManagerException if an error occurs while registering the {@linkplain Service}.
+	 */
+	ServiceId registerService(String className) throws ServiceManagerException;
 
 	/**
 	 * Starts a {@linkplain Service}.
 	 *
-	 * @param className the name of the {@linkplain Service} class to start.
+	 * @param serviceId the id of the {@linkplain Service} to start.
+	 * @param autoStart whether to always start the {@linkplain Service} on server start.
 	 * @throws ServiceManagerException if an error occurs while starting the {@linkplain Service}.
 	 */
-	void startService(String className) throws ServiceManagerException;
+	void startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException;
 
 	/**
 	 * Stops a {@linkplain Service}.
 	 *
-	 * @param className the name of the {@linkplain Service} class to stop.
+	 * @param serviceId the id of the {@linkplain Service} to stop.
 	 * @throws ServiceManagerException if an error occurs while stopping the {@linkplain Service}.
 	 */
-	void stopService(String className) throws ServiceManagerException;
+	void stopService(ServiceId serviceId) throws ServiceManagerException;
 
 }

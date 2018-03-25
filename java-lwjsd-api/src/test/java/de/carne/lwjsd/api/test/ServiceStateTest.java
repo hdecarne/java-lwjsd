@@ -27,7 +27,7 @@ import de.carne.lwjsd.api.ServiceState;
 class ServiceStateTest {
 
 	@Test
-	void testServiceManagerState() {
+	void testEnum() {
 		for (ServiceState state : ServiceState.values()) {
 			Assertions.assertEquals(state, ServiceState.valueOf(state.name()));
 		}

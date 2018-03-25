@@ -22,7 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import de.carne.lwjsd.runtime.security.AES128CipherFactory;
+import de.carne.lwjsd.runtime.security.AES256CipherFactory;
 import de.carne.lwjsd.runtime.security.ByteSecret;
 import de.carne.lwjsd.runtime.security.Cipher;
 import de.carne.lwjsd.runtime.security.CipherFactory;
@@ -44,7 +44,7 @@ class CipherFactoryTest {
 
 	@Test
 	void testCipherFactories() throws GeneralSecurityException {
-		testCipherFactory(AES128CipherFactory.CIPHER_NAME);
+		testCipherFactory(AES256CipherFactory.CIPHER_NAME);
 	}
 
 	private void testCipherFactory(String name) throws GeneralSecurityException {

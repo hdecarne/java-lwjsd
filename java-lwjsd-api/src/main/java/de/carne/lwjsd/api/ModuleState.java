@@ -14,34 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.carne.lwjsd.runtime.ws;
-
-import de.carne.lwjsd.api.ServiceManagerState;
+package de.carne.lwjsd.api;
 
 /**
- * Response object containing server status information.
+ * Operational states of a {@linkplain Service} module.
  */
-public class ServerStatus extends StatusMessage {
-
-	private ServiceManagerState state = ServiceManagerState.CONFIGURED;
+public enum ModuleState {
 
 	/**
-	 * Gets the current server state.
-	 *
-	 * @return the current server state.
-	 * @see ServiceManagerState
+	 * {@linkplain Service} module has been registered to the {@linkplain ServiceManager} but has not yet been loaded.
 	 */
-	public ServiceManagerState getServerState() {
-		return this.state;
-	}
+	REGISTERED,
 
 	/**
-	 * Sets the current server state.
-	 * 
-	 * @param state the server state to set.
+	 * {@linkplain Service} module has been loaded and any provided {@linkplain Service} has been registered.
 	 */
-	public void setServerState(ServiceManagerState state) {
-		this.state = state;
-	}
+	LOADED
 
 }

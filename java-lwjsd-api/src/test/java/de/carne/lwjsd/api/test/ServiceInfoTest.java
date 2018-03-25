@@ -19,18 +19,24 @@ package de.carne.lwjsd.api.test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import de.carne.lwjsd.api.ServiceManagerState;
+import de.carne.lwjsd.api.ServiceId;
+import de.carne.lwjsd.api.ServiceInfo;
+import de.carne.lwjsd.api.ServiceState;
 
 /**
- * Test {@linkplain ServiceManagerState} class.
+ * Test {@linkplain ServiceInfo} class.
  */
-class ServiceManagerStateTest {
+class ServiceInfoTest {
 
 	@Test
-	void testEnum() {
-		for (ServiceManagerState state : ServiceManagerState.values()) {
-			Assertions.assertEquals(state, ServiceManagerState.valueOf(state.name()));
-		}
+	void testServiceInfo() {
+		ServiceId serviceId = new ServiceId("moduleName", "serviceName");
+		ServiceInfo serviceInfo = new ServiceInfo(serviceId, ServiceState.REGISTERED, true);
+
+		Assertions.assertEquals(serviceId, serviceInfo.id());
+		Assertions.assertEquals(ServiceState.REGISTERED, serviceInfo.state());
+		Assertions.assertTrue(serviceInfo.autoStartFlag());
+		Assertions.assertEquals(":moduleName:serviceName (REGISTERED)", serviceInfo.toString());
 	}
 
 }

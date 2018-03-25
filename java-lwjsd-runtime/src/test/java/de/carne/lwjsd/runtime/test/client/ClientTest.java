@@ -22,11 +22,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import de.carne.lwjsd.api.ServiceManagerException;
+import de.carne.lwjsd.api.ServiceManagerInfo;
 import de.carne.lwjsd.api.ServiceManagerState;
 import de.carne.lwjsd.runtime.client.Client;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
 import de.carne.lwjsd.runtime.server.Server;
 import de.carne.lwjsd.runtime.test.TestConfig;
+import de.carne.lwjsd.runtime.test.TestService;
 
 /**
  * Test {@linkplain Client} class.
@@ -51,15 +53,20 @@ class ClientTest {
 		RuntimeConfig config = TestConfig.prepareConfig();
 
 		try (Server server = new Server(config); Client client = new Client(config)) {
+			server.registerService(TestService.class.getName());
 			server.start(false);
 			client.connect();
 
-			Assertions.assertEquals(ServiceManagerState.RUNNING, client.queryStatus());
+			ServiceManagerInfo status1 = client.queryStatus();
+
+			Assertions.assertEquals(ServiceManagerState.RUNNING, status1.state());
 
 			client.requestStop();
-			server.getServerThread().join(1000);
+			server.getServerThread().join();
 
-			Assertions.assertEquals(ServiceManagerState.STOPPED, server.queryStatus());
+			ServiceManagerInfo status2 = server.queryStatus();
+
+			Assertions.assertEquals(ServiceManagerState.STOPPED, status2.state());
 		} finally {
 			TestConfig.discardConfig(config);
 		}

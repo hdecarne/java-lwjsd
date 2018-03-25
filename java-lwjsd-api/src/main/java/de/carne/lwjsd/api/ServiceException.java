@@ -19,7 +19,7 @@ package de.carne.lwjsd.api;
 import java.text.MessageFormat;
 
 /**
- * This exception indicates an error during {@linkplain Service} operation.
+ * This exception indicates an error during a {@linkplain Service} operation.
  */
 public class ServiceException extends Exception {
 
@@ -27,7 +27,7 @@ public class ServiceException extends Exception {
 	private static final long serialVersionUID = -2408713377102975667L;
 
 	/**
-	 * Constructs {@linkplain ServiceException}.
+	 * Constructs a new {@linkplain ServiceException}.
 	 *
 	 * @param pattern the exception message pattern.
 	 * @param arguments the exception message arguments.
@@ -38,7 +38,7 @@ public class ServiceException extends Exception {
 	}
 
 	/**
-	 * Constructs {@linkplain ServiceException}.
+	 * Constructs a new {@linkplain ServiceException}.
 	 *
 	 * @param cause the causing exception.
 	 */
@@ -47,7 +47,7 @@ public class ServiceException extends Exception {
 	}
 
 	/**
-	 * Constructs {@linkplain ServiceException}.
+	 * Constructs a new {@linkplain ServiceException}.
 	 *
 	 * @param cause the causing exception.
 	 * @param pattern the exception message pattern.

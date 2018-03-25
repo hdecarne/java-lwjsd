@@ -42,7 +42,7 @@ class ConfigStoreTest {
 		RuntimeConfig config = TestConfig.prepareConfig();
 
 		try {
-			ConfigStore configStore1 = ConfigStore.open(config);
+			ConfigStore configStore1 = ConfigStore.create(config);
 			Path referenceFile = configStore1.getConfDir().resolve(ConfigStore.CONFIG_FILE);
 			Path testFile = configStore1.getConfDir().resolve("test1." + ConfigStore.CONFIG_FILE);
 
@@ -58,7 +58,7 @@ class ConfigStoreTest {
 
 			configStore1.setConfDir(config.getConfDir());
 			configStore1.setStateDir(config.getStateDir());
-			configStore1.setControlBaseUri(new URI("https://lwjsd.localhost"));
+			configStore1.setBaseUri(new URI("https://lwjsd.localhost"));
 			configStore1.setSslProtocol("TLS");
 			configStore1.setSslKeyStoreFile("lwjsd.localhost.jks");
 			configStore1.setSslKeyStoreSecret("terces");
@@ -66,7 +66,7 @@ class ConfigStoreTest {
 
 			Assertions.assertArrayEquals(new String[] {
 
-					"controlBaseUri = https://lwjsd.localhost",
+					"baseUri = https://lwjsd.localhost",
 
 					"sslProtocol = TLS",
 
@@ -78,7 +78,7 @@ class ConfigStoreTest {
 
 			Files.copy(testFile, referenceFile, StandardCopyOption.REPLACE_EXISTING);
 
-			ConfigStore configStore2 = ConfigStore.open(config);
+			ConfigStore configStore2 = ConfigStore.create(config);
 
 			configStore2.storeConfigFile(testFile);
 

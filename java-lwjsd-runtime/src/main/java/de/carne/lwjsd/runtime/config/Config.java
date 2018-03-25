@@ -25,11 +25,11 @@ import java.nio.file.Path;
 public abstract class Config {
 
 	/**
-	 * Gets the base {@linkplain URI} to use for the LWJSD server control channel access.
+	 * Gets the base {@linkplain URI} to use for HTTP based server access.
 	 *
-	 * @return the base {@linkplain URI} to use for the LWJSD server control channel access.
+	 * @return the base {@linkplain URI} to use for HTTP based server access.
 	 */
-	public abstract URI getControlBaseUri();
+	public abstract URI getBaseUri();
 
 	/**
 	 * Gets the SSL protocol to use for HTTPS connections.
@@ -56,10 +56,10 @@ public abstract class Config {
 	/**
 	 * Gets the SSL key store secret.
 	 * <p>
-	 * The returned secret may be encrypted and has to decryped using the
-	 * {@linkplain SecretsStore#decryptSecret(String)} function.
+	 * The returned secret may be encrypted and has to decrypted using the runtime's
+	 * {@linkplain de.carne.lwjsd.runtime.security.SecretsStore}.
 	 *
-	 * @return the SSL key store secret or {@code ""} if none has been configured.
+	 * @return the SSL key store secret or the empty string if none has been configured.
 	 */
 	public abstract String getSslKeyStoreSecret();
 
@@ -75,7 +75,7 @@ public abstract class Config {
 		StringBuilder buffer = new StringBuilder();
 
 		buffer.append("config:").append(System.lineSeparator());
-		buffer.append(" controlBaseUri = ").append(getControlBaseUri()).append(System.lineSeparator());
+		buffer.append(" baseUri = ").append(getBaseUri()).append(System.lineSeparator());
 		buffer.append(" sslProtocol = ").append(getSslProtocol()).append(System.lineSeparator());
 		buffer.append(" confDir = ").append(getConfDir()).append(System.lineSeparator());
 		buffer.append("  sslKeyStoreFile = ").append(getSslKeyStoreFile()).append(System.lineSeparator());

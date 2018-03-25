@@ -23,9 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -35,30 +35,37 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.glassfish.grizzly.http.server.HttpHandler;
+import org.glassfish.grizzly.http.server.HttpHandlerRegistration;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 
-import de.carne.check.Check;
+import de.carne.lwjsd.api.ModuleInfo;
+import de.carne.lwjsd.api.Service;
+import de.carne.lwjsd.api.ServiceContext;
+import de.carne.lwjsd.api.ServiceId;
+import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceManager;
 import de.carne.lwjsd.api.ServiceManagerException;
+import de.carne.lwjsd.api.ServiceManagerInfo;
 import de.carne.lwjsd.api.ServiceManagerState;
 import de.carne.lwjsd.runtime.config.Config;
 import de.carne.lwjsd.runtime.config.ConfigStore;
-import de.carne.lwjsd.runtime.config.SecretsStore;
 import de.carne.lwjsd.runtime.security.CharSecret;
-import de.carne.lwjsd.runtime.ws.ServiceManagerService;
+import de.carne.lwjsd.runtime.security.Passwords;
+import de.carne.lwjsd.runtime.security.SecretsStore;
 import de.carne.util.Exceptions;
 import de.carne.util.Late;
 import de.carne.util.SystemProperties;
 import de.carne.util.logging.Log;
 
 /**
- * This class runs the LWJSD server and provides the actual {@linkplain ServiceManager} interface for service
- * configuration and control.
+ * This class runs the master server and provides the actual {@linkplain ServiceManager} and {@linkplain ServiceContext}
+ * interface for service execution.
  */
-public class Server implements ServiceManager, AutoCloseable {
+public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 
 	private static final Log LOG = new Log();
 
@@ -76,8 +83,8 @@ public class Server implements ServiceManager, AutoCloseable {
 	private final ConfigStore configStore;
 	private final ServiceStore serviceStore;
 	private final BlockingQueue<Request> requests = new LinkedBlockingQueue<>(REQUEST_BACKLOG);
-	private final Late<Thread> serverThread = new Late<>();
-	private final Late<HttpServer> httpServer = new Late<>();
+	private final Late<Thread> serverThreadHolder = new Late<>();
+	private final Late<HttpServer> httpServerHolder = new Late<>();
 
 	/**
 	 * Constructs new {@linkplain Server} instance.
@@ -89,56 +96,52 @@ public class Server implements ServiceManager, AutoCloseable {
 	 */
 	public Server(Config config) throws ServiceManagerException {
 		try {
-			this.secretsStore = SecretsStore.open(config);
-			this.configStore = ConfigStore.open(config);
-			this.serviceStore = ServiceStore.open(config);
+			this.secretsStore = SecretsStore.create(config);
+			this.configStore = ConfigStore.create(config);
+			this.serviceStore = ServiceStore.create(this, config);
 		} catch (IOException | GeneralSecurityException e) {
 			throw new ServiceManagerException(e, "Failed to open required store");
 		}
 	}
 
 	/**
-	 * Starts the server and sets the control interface as well as all already configured services online.
+	 * Starts the master server and sets up the control interface as well as any already configured services.
 	 * <p>
-	 * If the server is started in the current thread the call is responsible for running the server request dispatch
-	 * loop by invoking {@linkplain #processRequest()} and {@linkplain #sleep()}..
+	 * If the server is started in the current thread the function only returns after the server has been stopped.
 	 *
-	 * @param foreground whether to start the server in the current thread ({@code true}) or in a background thread.
+	 * @param foreground whether to start and run the server in the current thread ({@code true}) or in a background
+	 *        thread.
 	 * @return the {@linkplain Thread} instance running the server.
 	 * @throws ServiceManagerException if the startup fails.
-	 * @throws InterruptedException if the thread is interrupted while waiting for the server startup.
-	 * @see #processRequest()
-	 * @see #sleep()
+	 * @throws InterruptedException if the thread is interrupted during server startup or execution.
 	 */
 	public synchronized Thread start(boolean foreground) throws ServiceManagerException, InterruptedException {
 		if (this.state != ServiceManagerState.CONFIGURED) {
-			throw new ServiceManagerException("Server has already been started (status: ''{0}''", this.state);
+			throw new ServiceManagerException("Master server has already been started (status: ''{0}''", this.state);
 		}
 
 		Thread thread;
 
 		if (foreground) {
-			LOG.info("Starting server...");
+			LOG.info("Starting master server...");
 			LOG.debug("Using {0}", this.configStore);
-
-			this.state = ServiceManagerState.STARTING;
-			notifyAll();
 
 			startHttpServer();
 
 			this.state = ServiceManagerState.RUNNING;
 			notifyAll();
 
-			LOG.notice("Server up and running");
+			LOG.notice("Master server up and running");
 
-			thread = this.serverThread.set(Thread.currentThread());
+			this.serviceStore.autoStartServices();
+			thread = this.serverThreadHolder.set(Thread.currentThread());
+			while (processRequest()) {
+				sleep();
+			}
 		} else {
 			thread = new Thread(() -> {
 				try {
 					start(true);
-					while (processRequest()) {
-						sleep();
-					}
 				} catch (ServiceManagerException | InterruptedException e) {
 					throw Exceptions.toRuntime(e);
 				}
@@ -158,63 +161,15 @@ public class Server implements ServiceManager, AutoCloseable {
 	 * @see #start(boolean)
 	 */
 	public Thread getServerThread() {
-		return this.serverThread.get();
-	}
-
-	/**
-	 * Process any pending server request and check whether server is still in running state.
-	 *
-	 * @return {@code true} if the server is still running.
-	 * @throws ServiceManagerException if request processing fails.
-	 */
-	public synchronized boolean processRequest() throws ServiceManagerException {
-		Check.assertTrue(Thread.currentThread().equals(this.serverThread.get()));
-
-		Request request = this.requests.poll();
-
-		if (request != null) {
-			request.process();
-		}
-		return this.state == ServiceManagerState.RUNNING;
-	}
-
-	/**
-	 * Sleep until the next server request is pending or the server is no longer running.
-	 *
-	 * @throws InterruptedException if the sleep operation is interrupted.
-	 */
-	public synchronized void sleep() throws InterruptedException {
-		Check.assertTrue(Thread.currentThread().equals(this.serverThread.get()));
-
-		while (this.state == ServiceManagerState.RUNNING && this.requests.isEmpty()) {
-			this.wait(WAIT_TIMEOUT);
-		}
-	}
-
-	/**
-	 * Stops the server and sets all services offline.
-	 *
-	 * @throws ServiceManagerException if the stop operation fails.
-	 */
-	public synchronized void stop() throws ServiceManagerException {
-		LOG.info("Stopping server...");
-
-		this.state = ServiceManagerState.STOPPING;
-		// Wake up any waiting thread (e.g. in sleep() call)
-		notifyAll();
-		try {
-			this.httpServer.get().shutdown(WAIT_TIMEOUT, TimeUnit.MILLISECONDS).get();
-		} catch (ExecutionException | InterruptedException e) {
-			throw new ServiceManagerException(e, "HTTP server shutdown failed");
-		}
-		this.state = ServiceManagerState.STOPPED;
-
-		LOG.notice("Server has been stopped");
+		return this.serverThreadHolder.get();
 	}
 
 	@Override
-	public ServiceManagerState queryStatus() throws ServiceManagerException {
-		return this.state;
+	public ServiceManagerInfo queryStatus() throws ServiceManagerException {
+		Collection<ModuleInfo> moduleInfos = this.serviceStore.queryModuleStatus();
+		Collection<ServiceInfo> serviceInfos = this.serviceStore.queryServiceStatus();
+
+		return new ServiceManagerInfo(this.configStore.getBaseUri(), this.state, moduleInfos, serviceInfos);
 	}
 
 	@Override
@@ -223,44 +178,64 @@ public class Server implements ServiceManager, AutoCloseable {
 	}
 
 	@Override
-	public void deployService(String className, boolean start) throws ServiceManagerException {
-		deployService(Optional.empty(), className, start);
+	public String registerModule(String file, boolean overwrite) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+		return "";
 	}
 
 	@Override
-	public void deployService(String moduleName, String className, boolean start) throws ServiceManagerException {
-		deployService(Optional.of(moduleName), className, start);
+	public void loadModule(String moduleName) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+		this.serviceStore.syncStore();
 	}
 
-	private void deployService(Optional<String> moduleName, String className, boolean start)
+	@Override
+	public void deleteModule(String moduleName) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+		this.serviceStore.syncStore();
+	}
+
+	@Override
+	public ServiceId registerService(String className) throws ServiceManagerException {
+		ServiceId serviceId = new ServiceId(ServiceStore.RUNTIME_MODULE_NAME, className);
+
+		this.serviceStore.registerService(serviceId, false);
+		this.serviceStore.syncStore();
+		return serviceId;
+	}
+
+	@Override
+	public void startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException {
+		this.serviceStore.startService(serviceId, autoStart);
+		this.serviceStore.syncStore();
+	}
+
+	@Override
+	public void stopService(ServiceId serviceId) throws ServiceManagerException {
+		this.serviceStore.stopService(serviceId, false);
+	}
+
+	@Override
+	public void addHttpHandler(HttpHandler httpHandler, HttpHandlerRegistration... mapping)
 			throws ServiceManagerException {
-		String serviceName = ServiceStore.formatServiceName(moduleName, className);
-
-		LOG.info("Deploying service ''{0}''", serviceName);
-		try {
-			this.serviceStore.registerService(moduleName, className, false);
-		} catch (IOException e) {
-			throw new ServiceManagerException(e, "Failed to register service ''{0}''", serviceName);
-		}
-		if (start) {
-			startService(className);
-		}
-	}
-
-	@Override
-	public void startService(String className) throws ServiceManagerException {
-		this.serviceStore.startService(className, this, this.secretsStore);
-	}
-
-	@Override
-	public void stopService(String className) throws ServiceManagerException {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
+	public void removeHttpHandler(HttpHandler httpHandler) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public <T extends Service> T getService(Class<T> serviceClass) throws ServiceManagerException {
+		return this.serviceStore.getService(serviceClass);
+	}
+
+	@Override
 	public synchronized void close() {
-		LOG.info("Cleaning up server resources...");
+		LOG.info("Cleaning up master server resources...");
 
 		int pendingRequestCount = this.requests.size();
 
@@ -268,12 +243,42 @@ public class Server implements ServiceManager, AutoCloseable {
 			LOG.warning("Discarding {0} unprocessed server requests", pendingRequestCount);
 			this.requests.clear();
 		}
-		this.httpServer.toOptional().ifPresent(HttpServer::shutdownNow);
+		this.httpServerHolder.toOptional().ifPresent(HttpServer::shutdownNow);
+		this.serviceStore.close();
+	}
+
+	private synchronized void stop() throws ServiceManagerException {
+		LOG.info("Stopping master server...");
+
+		this.serviceStore.unloadAllServices();
+		this.state = ServiceManagerState.STOPPED;
+		notifyAll();
+		try {
+			this.httpServerHolder.get().shutdown(WAIT_TIMEOUT, TimeUnit.MILLISECONDS).get();
+		} catch (ExecutionException | InterruptedException e) {
+			throw new ServiceManagerException(e, "HTTP server shutdown failed");
+		}
+		LOG.notice("Master server has been stopped");
 	}
 
 	@Override
 	public String toString() {
-		return "Server " + this.configStore.getControlBaseUri();
+		return "Master server " + this.configStore.getBaseUri();
+	}
+
+	private synchronized boolean processRequest() throws ServiceManagerException {
+		Request request = this.requests.poll();
+
+		if (request != null) {
+			request.process();
+		}
+		return this.state == ServiceManagerState.RUNNING;
+	}
+
+	private synchronized void sleep() throws InterruptedException {
+		while (this.state == ServiceManagerState.RUNNING && this.requests.isEmpty()) {
+			this.wait(WAIT_TIMEOUT);
+		}
 	}
 
 	private synchronized void submitRequest(Request request) throws ServiceManagerException {
@@ -293,13 +298,13 @@ public class Server implements ServiceManager, AutoCloseable {
 
 			controlResourceConfigProperties.put(getClass().getName(), this);
 
-			ResourceConfig controlResourceConfig = new ResourceConfig(ServiceManagerService.class)
+			ResourceConfig controlResourceConfig = new ResourceConfig(ControlApiService.class)
 					.addProperties(controlResourceConfigProperties);
-			URI controlBaseUri = this.configStore.getControlBaseUri();
+			URI baseUri = this.configStore.getBaseUri();
 			SSLEngineConfigurator sslEngineConfigurator;
 			boolean secure;
 
-			if ("https".equals(controlBaseUri.getScheme())) {
+			if ("https".equals(baseUri.getScheme())) {
 				sslEngineConfigurator = setupSslEngineConfigurator();
 				secure = true;
 			} else {
@@ -307,7 +312,7 @@ public class Server implements ServiceManager, AutoCloseable {
 				secure = false;
 			}
 
-			HttpServer server = this.httpServer.set(GrizzlyHttpServerFactory.createHttpServer(controlBaseUri,
+			HttpServer server = this.httpServerHolder.set(GrizzlyHttpServerFactory.createHttpServer(baseUri,
 					controlResourceConfig, secure, sslEngineConfigurator, false));
 
 			server.start();
@@ -325,16 +330,17 @@ public class Server implements ServiceManager, AutoCloseable {
 
 		SSLEngineConfigurator sslEngineConfigurator;
 
-		try (CharSecret keyStoreSecret = this.secretsStore.decryptSecret(this.configStore.getSslKeyStoreSecret());
+		try (CharSecret keyStorePassword = Passwords.decryptPassword(this.secretsStore,
+				this.configStore.getSslKeyStoreSecret());
 				InputStream keyStoreStream = Files.newInputStream(sslKeyStore)) {
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 
-			keyStore.load(keyStoreStream, keyStoreSecret.get());
+			keyStore.load(keyStoreStream, keyStorePassword.get());
 
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory
 					.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
-			keyManagerFactory.init(keyStore, keyStoreSecret.get());
+			keyManagerFactory.init(keyStore, keyStorePassword.get());
 
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory
 					.getInstance(TrustManagerFactory.getDefaultAlgorithm());

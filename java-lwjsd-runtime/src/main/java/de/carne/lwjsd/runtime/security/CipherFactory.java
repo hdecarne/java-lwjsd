@@ -18,77 +18,31 @@ package de.carne.lwjsd.runtime.security;
 
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ServiceLoader;
 
-import javax.security.auth.DestroyFailedException;
-import javax.security.auth.Destroyable;
-
-import de.carne.util.logging.Log;
-
 /**
- * Base class for all kinds of cipher factories.
+ * Base class for all kinds of {@linkplain Cipher} factories.
  * <p>
- * Cipher factories are used to create and initialize cipher instances suitable for encryption and decryption of data.
+ * Cipher factories are used to create and initialize {@linkplain Cipher} instances suitable for encryption and
+ * decryption of data.
  */
-public abstract class CipherFactory {
-
-	private static final Log LOG = new Log();
-
-	private final String name;
+public abstract class CipherFactory extends SecretsProvider {
 
 	/**
 	 * Constructs new {@linkplain CipherFactory} instance.
 	 *
-	 * @param name the cipher name uniquely identifying this factory.
+	 * @param name the cipher type uniquely identifying this factory.
 	 */
 	protected CipherFactory(String name) {
-		this.name = name;
+		super(name);
 	}
 
 	/**
-	 * Gets a {@linkplain SecureRandom} instance for generation of random data.
+	 * Gets the {@linkplain CipherFactory} for a specific cipher type.
 	 *
-	 * @return a {@linkplain SecureRandom} instance for generation of random data.
-	 */
-	protected static SecureRandom getRandom() {
-		return Randomness.get();
-	}
-
-	/**
-	 * Destroys a {@linkplain Destroyable} object and handles a possible {@linkplain DestroyFailedException} by issuing
-	 * an error log statement.
-	 *
-	 * @param destroyable the object to destroy.
-	 */
-	protected void safeDestroy(Destroyable destroyable) {
-		try {
-			destroyable.destroy();
-		} catch (DestroyFailedException e) {
-			// Ignore exceptions thrown by default implementation
-			StackTraceElement[] stes = e.getStackTrace();
-
-			if (stes.length > 0 && !Destroyable.class.getName().equals(stes[0].getClassName())) {
-				LOG.error(e, "Failed to destroy security object (type: {0})", destroyable.getClass().getName());
-			}
-		}
-	}
-
-	/**
-	 * Gets the name of the cipher provided by this instance.
-	 *
-	 * @return the name of the cipher provided by this instance.
-	 */
-	public final String name() {
-		return this.name;
-	}
-
-	/**
-	 * Gets the cipher factory for a specific cipher.
-	 *
-	 * @param name The cipher name to get the factory for.
-	 * @return The found cipher factory.
-	 * @throws NoSuchAlgorithmException if no factory has been found for the submitted cipher name.
+	 * @param name The cipher type to get the factory for.
+	 * @return The found {@linkplain CipherFactory}.
+	 * @throws NoSuchAlgorithmException if no factory has been found for the submitted cipher type.
 	 */
 	public static CipherFactory getInstance(String name) throws NoSuchAlgorithmException {
 		ServiceLoader<CipherFactory> cipherFactories = ServiceLoader.load(CipherFactory.class);
@@ -100,7 +54,7 @@ public abstract class CipherFactory {
 			}
 		}
 		if (found == null) {
-			throw new NoSuchAlgorithmException("Unknown cipher: " + name);
+			throw new NoSuchAlgorithmException("Unknown cipher type: " + name);
 		}
 		return found;
 	}

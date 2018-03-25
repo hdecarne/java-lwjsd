@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.carne.lwjsd.runtime.test.config;
+package de.carne.lwjsd.runtime.test.security;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Test;
 
 import de.carne.lwjsd.runtime.config.Defaults;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
-import de.carne.lwjsd.runtime.config.SecretsStore;
-import de.carne.lwjsd.runtime.security.CharSecret;
+import de.carne.lwjsd.runtime.security.Cipher;
+import de.carne.lwjsd.runtime.security.SecretsStore;
 import de.carne.nio.file.FileUtil;
 
 /**
@@ -44,20 +44,22 @@ class SecretsStoreTest {
 		config.setStateDir(tempDir);
 		try {
 			// Test new initialized store
-			testSecretsStoreInstance(SecretsStore.open(config));
+			testSecretsStoreInstance(SecretsStore.create(config));
 			// Test re-loaded store
-			testSecretsStoreInstance(SecretsStore.open(config));
+			testSecretsStoreInstance(SecretsStore.create(config));
 		} finally {
 			FileUtil.delete(tempDir);
 		}
 	}
 
 	void testSecretsStoreInstance(SecretsStore secretsStore) throws GeneralSecurityException {
-		CharSecret secret = CharSecret.wrap("secret".toCharArray());
-		String encryptedSecret = secretsStore.encryptSecret(secret);
-		CharSecret decryptedSecret = secretsStore.decryptSecret(encryptedSecret);
+		Cipher defaultCipher = secretsStore.getDefaultCipher();
 
-		Assertions.assertArrayEquals(secret.get(), decryptedSecret.get());
+		Assertions.assertNotNull(defaultCipher);
+
+		Cipher namedCipher = secretsStore.getCipher(defaultCipher.name());
+
+		Assertions.assertEquals(defaultCipher, namedCipher);
 	}
 
 }

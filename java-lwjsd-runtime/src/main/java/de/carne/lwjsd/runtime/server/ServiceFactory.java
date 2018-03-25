@@ -14,26 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.carne.lwjsd.api;
+package de.carne.lwjsd.runtime.server;
 
-/**
- * Operational states of a {@linkplain ServiceManager}.
- */
-public enum ServiceManagerState {
+import de.carne.lwjsd.api.Service;
+import de.carne.lwjsd.api.ServiceId;
+import de.carne.lwjsd.api.ServiceManagerException;
 
-	/**
-	 * {@linkplain ServiceManager} has been constructed but has not yet been started.
-	 */
-	CONFIGURED,
+@FunctionalInterface
+interface ServiceFactory {
 
-	/**
-	 * {@linkplain ServiceManager} is up and running.
-	 */
-	RUNNING,
-
-	/**
-	 * {@linkplain ServiceManager} has been stopped and is no longer accessible.
-	 */
-	STOPPED
+	Service get(ServiceId id) throws ServiceManagerException;
 
 }

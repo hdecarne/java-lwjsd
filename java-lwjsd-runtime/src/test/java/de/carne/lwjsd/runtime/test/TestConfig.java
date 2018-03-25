@@ -55,7 +55,7 @@ public final class TestConfig {
 			IOUtil.copyStream(config.getConfDir().resolve(config.getSslKeyStoreFile()).toFile(), sslKeyStoreStream);
 		}
 
-		ConfigStore configStore = ConfigStore.open(config);
+		ConfigStore configStore = ConfigStore.create(config);
 
 		configStore.storeConfigFile(config.getConfDir().resolve(ConfigStore.CONFIG_FILE));
 		System.out.println("Using test " + config);

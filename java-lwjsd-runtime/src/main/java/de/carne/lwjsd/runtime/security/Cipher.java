@@ -21,7 +21,12 @@ import java.security.GeneralSecurityException;
 /**
  * Base class for all kind of ciphers.
  */
-public abstract class Cipher implements AutoCloseable {
+public abstract class Cipher extends Secret {
+
+	@Override
+	public final SecretsProvider provider() {
+		return factory();
+	}
 
 	/**
 	 * Gets the {@linkplain CipherFactory} used to create this {@linkplain Cipher}.
@@ -29,13 +34,6 @@ public abstract class Cipher implements AutoCloseable {
 	 * @return the {@linkplain CipherFactory} used to create this {@linkplain Cipher}.
 	 */
 	public abstract CipherFactory factory();
-
-	/**
-	 * Gets the encoded representation of this {@linkplain Cipher} instance.
-	 *
-	 * @return the encoded representation of this {@linkplain Cipher} instance.
-	 */
-	public abstract ByteSecret getEncoded();
 
 	/**
 	 * Encrypts data bytes.
@@ -101,11 +99,6 @@ public abstract class Cipher implements AutoCloseable {
 			}
 		}
 		return decrypted;
-	}
-
-	@Override
-	public void close() {
-		// Nothing to do here
 	}
 
 }

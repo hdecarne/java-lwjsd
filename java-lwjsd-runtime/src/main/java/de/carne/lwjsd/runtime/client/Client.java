@@ -29,26 +29,27 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
 
+import org.glassfish.jersey.client.proxy.WebResourceFactory;
 import org.glassfish.jersey.jackson.JacksonFeature;
 
+import de.carne.lwjsd.api.ServiceId;
 import de.carne.lwjsd.api.ServiceManager;
 import de.carne.lwjsd.api.ServiceManagerException;
-import de.carne.lwjsd.api.ServiceManagerState;
+import de.carne.lwjsd.api.ServiceManagerInfo;
 import de.carne.lwjsd.runtime.config.Config;
 import de.carne.lwjsd.runtime.config.ConfigStore;
-import de.carne.lwjsd.runtime.config.SecretsStore;
 import de.carne.lwjsd.runtime.security.CharSecret;
-import de.carne.lwjsd.runtime.ws.ServerStatus;
-import de.carne.lwjsd.runtime.ws.ServiceManagerService;
-import de.carne.lwjsd.runtime.ws.StatusMessage;
+import de.carne.lwjsd.runtime.security.Passwords;
+import de.carne.lwjsd.runtime.security.SecretsStore;
+import de.carne.lwjsd.runtime.ws.ControlApi;
 import de.carne.util.Debug;
 import de.carne.util.Late;
+import de.carne.util.ManifestInfos;
 import de.carne.util.logging.Log;
 
 /**
- * The class runs the LWJSD client and makes the server's {@linkplain ServiceManager} interface locally accessible.
+ * The class provides remote access to the master server's {@linkplain ServiceManager} interface.
  */
 public final class Client implements ServiceManager, AutoCloseable {
 
@@ -56,7 +57,8 @@ public final class Client implements ServiceManager, AutoCloseable {
 
 	private final SecretsStore secretsStore;
 	private final ConfigStore configStore;
-	private final Late<javax.ws.rs.client.Client> restClient = new Late<>();
+	private final Late<javax.ws.rs.client.Client> controlApiClientHolder = new Late<>();
+	private final Late<ControlApi> controlApiHolder = new Late<>();
 
 	/**
 	 * Constructs new {@linkplain Client} instance.
@@ -68,8 +70,8 @@ public final class Client implements ServiceManager, AutoCloseable {
 	 */
 	public Client(Config config) throws ServiceManagerException {
 		try {
-			this.secretsStore = SecretsStore.open(config);
-			this.configStore = ConfigStore.open(config);
+			this.secretsStore = SecretsStore.create(config);
+			this.configStore = ConfigStore.create(config);
 		} catch (IOException | GeneralSecurityException e) {
 			throw new ServiceManagerException(e, "Failed to open required store");
 		}
@@ -81,21 +83,32 @@ public final class Client implements ServiceManager, AutoCloseable {
 	 * @throws ServiceManagerException if the server connections fails.
 	 */
 	public void connect() throws ServiceManagerException {
-		URI controlBaseUri = this.configStore.getControlBaseUri();
+		URI baseUri = this.configStore.getBaseUri();
 
-		LOG.info("Connecting to server at ''{0}''...", controlBaseUri);
+		LOG.info("Connecting to server at ''{0}''...", baseUri);
 		LOG.debug("Using {0}", this.configStore);
 
 		ClientBuilder clientBuilder = ClientBuilder.newBuilder();
 
-		if ("https".equals(controlBaseUri.getScheme())) {
+		if ("https".equals(baseUri.getScheme())) {
 			clientBuilder.sslContext(setupSslContext());
 		}
+		clientBuilder.register(JacksonFeature.class);
 
-		this.restClient.set(clientBuilder.register(JacksonFeature.class).build());
-		ping();
+		javax.ws.rs.client.Client controlApiClient = this.controlApiClientHolder.set(clientBuilder.build());
 
-		LOG.notice("Successfully connected to server ''{0}''", controlBaseUri);
+		this.controlApiHolder.set(WebResourceFactory.newResource(ControlApi.class, controlApiClient.target(baseUri)));
+
+		String serverVersion = version();
+
+		LOG.info("Server version: ''{0}''", serverVersion);
+
+		if (!ManifestInfos.APPLICATION_VERSION.equals(serverVersion)) {
+			throw new ServiceManagerException("Client/server version mismatch (expected: ''{0}''; actual: ''{1}''",
+					ManifestInfos.APPLICATION_VERSION, serverVersion);
+		}
+
+		LOG.notice("Successfully connected to server ''{0}'' (version: ''{1}'')", baseUri, serverVersion);
 	}
 
 	private SSLContext setupSslContext() throws ServiceManagerException {
@@ -105,16 +118,17 @@ public final class Client implements ServiceManager, AutoCloseable {
 
 		SSLContext sslContext;
 
-		try (CharSecret keyStoreSecret = this.secretsStore.decryptSecret(this.configStore.getSslKeyStoreSecret());
+		try (CharSecret keyStorePassword = Passwords.decryptPassword(this.secretsStore,
+				this.configStore.getSslKeyStoreSecret());
 				InputStream keyStoreStream = Files.newInputStream(sslKeyStore)) {
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 
-			keyStore.load(keyStoreStream, keyStoreSecret.get());
+			keyStore.load(keyStoreStream, keyStorePassword.get());
 
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory
 					.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
-			keyManagerFactory.init(keyStore, keyStoreSecret.get());
+			keyManagerFactory.init(keyStore, keyStorePassword.get());
 
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory
 					.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -129,98 +143,86 @@ public final class Client implements ServiceManager, AutoCloseable {
 		return sslContext;
 	}
 
-	private void ping() throws ServiceManagerException {
-		try {
-			WebTarget pingTarget = this.restClient.get().target(this.configStore.getControlBaseUri())
-					.path(ServiceManagerService.WEB_CONTEXT_PATH).path(ServiceManagerService.PING_PATH);
+	private String version() throws ServiceManagerException {
+		String version;
 
-			checkRequestStatus(pingTarget.request().get().readEntity(StatusMessage.class));
+		try {
+			version = this.controlApiHolder.get().version();
 		} catch (ProcessingException e) {
 			throw mapProcessingException(e);
 		}
+		return version;
 	}
 
 	@Override
-	public ServiceManagerState queryStatus() throws ServiceManagerException {
-		ServerStatus status;
+	public ServiceManagerInfo queryStatus() throws ServiceManagerException {
+		ServiceManagerInfo serviceManagerInfo;
 
 		try {
-			WebTarget queryStatusTarget = this.restClient.get().target(this.configStore.getControlBaseUri())
-					.path(ServiceManagerService.WEB_CONTEXT_PATH).path(ServiceManagerService.REQUEST_QUERY_STATUS);
-
-			status = checkRequestStatus(queryStatusTarget.request().get().readEntity(ServerStatus.class));
+			serviceManagerInfo = this.controlApiHolder.get().queryStatus().toSource();
 		} catch (ProcessingException e) {
 			throw mapProcessingException(e);
 		}
-		return status.getServerState();
+		return serviceManagerInfo;
 	}
 
 	@Override
 	public void requestStop() throws ServiceManagerException {
-		try {
-			WebTarget requestStopTarget = this.restClient.get().target(this.configStore.getControlBaseUri())
-					.path(ServiceManagerService.WEB_CONTEXT_PATH).path(ServiceManagerService.REQUEST_STOP_PATH);
-
-			checkRequestStatus(requestStopTarget.request().get().readEntity(StatusMessage.class));
-		} catch (ProcessingException e) {
-			throw mapProcessingException(e);
-		}
+		this.controlApiHolder.get().requestStop();
 	}
 
 	@Override
-	public void deployService(String className, boolean start) throws ServiceManagerException {
+	public String registerModule(String file, boolean overwrite) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+		return "";
+	}
+
+	@Override
+	public void loadModule(String moduleName) throws ServiceManagerException {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void deployService(String moduleName, String className, boolean start) throws ServiceManagerException {
+	public void deleteModule(String moduleName) throws ServiceManagerException {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void startService(String className) throws ServiceManagerException {
+	public ServiceId registerService(String className) throws ServiceManagerException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void stopService(String className) throws ServiceManagerException {
+	public void stopService(ServiceId serviceId) throws ServiceManagerException {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void close() {
-		URI controlBaseUri = this.configStore.getControlBaseUri();
+		URI baseUri = this.configStore.getBaseUri();
 
-		LOG.info("Closing connection to server ''{0}''...", controlBaseUri);
+		LOG.info("Closing connection to server ''{0}''...", baseUri);
 
-		this.restClient.toOptional().ifPresent(javax.ws.rs.client.Client::close);
+		this.controlApiClientHolder.toOptional().ifPresent(javax.ws.rs.client.Client::close);
 
-		LOG.notice("Connection to server ''{0}'' has been closed", this.configStore.getControlBaseUri());
-	}
-
-	private <T extends StatusMessage> T checkRequestStatus(T requestStatus) throws ServiceManagerException {
-		String status = requestStatus.getStatusMessage();
-
-		if (!StatusMessage.OK.equals(status)) {
-			String restCall = Debug.getCaller();
-
-			throw new ServiceManagerException("REST call {0} failed (status: ''{1}'')", restCall, status);
-		} else if (LOG.isDebugLoggable()) {
-			LOG.debug("REST call {0} (status: ''{1}'')", Debug.getCaller(), requestStatus.getStatusMessage());
-		}
-
-		return requestStatus;
+		LOG.notice("Connection to server ''{0}'' has been closed", this.configStore.getBaseUri());
 	}
 
 	private ServiceManagerException mapProcessingException(ProcessingException e) {
 		String restCall = Debug.getCaller();
-		URI controlBaseUri = this.configStore.getControlBaseUri();
+		URI baseUri = this.configStore.getBaseUri();
 
-		return new ServiceManagerException(e, "REST call {0} to server ''{1}'' failed", restCall, controlBaseUri);
+		return new ServiceManagerException(e, "REST call {0} to master server ''{1}'' failed", restCall, baseUri);
 	}
 
 }

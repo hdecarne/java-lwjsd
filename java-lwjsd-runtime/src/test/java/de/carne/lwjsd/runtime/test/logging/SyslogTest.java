@@ -23,6 +23,7 @@ import java.util.HashSet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import de.carne.lwjsd.api.ServiceId;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
 import de.carne.lwjsd.runtime.logging.SyslogConfig;
@@ -93,8 +94,9 @@ class SyslogTest {
 
 		try (Server server = new Server(config)) {
 			Thread serverThread = server.start(false);
+			ServiceId syslogServiceId = server.registerService(SyslogReceiverService.class.getName());
 
-			server.deployService(SyslogService.class.getName(), true);
+			server.startService(syslogServiceId, false);
 			server.requestStop();
 			serverThread.join();
 		} finally {

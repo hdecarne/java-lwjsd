@@ -26,24 +26,25 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * {@linkplain CipherFactory} implementation for AES128 cipher.
+ * {@linkplain CipherFactory} implementation providing AES256 cipher.
  */
-public class AES128CipherFactory extends CipherFactory {
+public class AES256CipherFactory extends CipherFactory {
 
-	private static final String KEY_ALGORITHM = "AES";
-	private static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5Padding";
+	private static final String KEY_FACTORY_ALG = "PBKDF2WithHmacSHA256";
+	private static final String KEY_ALG = "AES";
+	private static final String CIPHER_ALG = "AES/CBC/PKCS5Padding";
 	private static final int SALT_LENGTH = 8;
 	private static final int IV_LENGTH = 16;
 
 	/**
 	 * Cipher name.
 	 */
-	public static final String CIPHER_NAME = "AES128";
+	public static final String CIPHER_NAME = "aes256-cipher";
 
 	/**
-	 * Constructs new {@linkplain AES128CipherFactory} instance.
+	 * Constructs new {@linkplain AES256CipherFactory} instance.
 	 */
-	public AES128CipherFactory() {
+	public AES256CipherFactory() {
 		super(CIPHER_NAME);
 	}
 
@@ -53,17 +54,17 @@ public class AES128CipherFactory extends CipherFactory {
 
 		getRandom().nextBytes(salt);
 
-		SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-		KeySpec keySpec = new PBEKeySpec(null, salt, 10000, 128);
+		SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance(KEY_FACTORY_ALG);
+		KeySpec keySpec = new PBEKeySpec(null, salt, 65536, 256);
 		SecretKey secretKey = secretKeyFactory.generateSecret(keySpec);
 		SecretKeySpec secretKeySpec;
 
 		try (ByteSecret encodedSecretKey = ByteSecret.wrap(secretKey.getEncoded())) {
-			secretKeySpec = new SecretKeySpec(encodedSecretKey.get(), KEY_ALGORITHM);
+			secretKeySpec = new SecretKeySpec(encodedSecretKey.get(), KEY_ALG);
 		} finally {
 			safeDestroy(secretKey);
 		}
-		return new AES128Cipher(salt, secretKeySpec);
+		return new AES256Cipher(salt, secretKeySpec);
 	}
 
 	@Override
@@ -74,9 +75,9 @@ public class AES128CipherFactory extends CipherFactory {
 		System.arraycopy(encodedBytes, 0, salt, 0, SALT_LENGTH);
 
 		SecretKeySpec secretKeySpec = new SecretKeySpec(encodedBytes, SALT_LENGTH, encodedBytes.length - SALT_LENGTH,
-				KEY_ALGORITHM);
+				KEY_ALG);
 
-		return new AES128Cipher(salt, secretKeySpec);
+		return new AES256Cipher(salt, secretKeySpec);
 	}
 
 	ByteSecret cipherGetEncoded0(byte[] salt, SecretKeySpec secretKeySpec) {
@@ -96,7 +97,7 @@ public class AES128CipherFactory extends CipherFactory {
 		getRandom().nextBytes(iv);
 
 		IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
-		javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(CIPHER_ALGORITHM);
+		javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(CIPHER_ALG);
 
 		cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
 
@@ -110,7 +111,7 @@ public class AES128CipherFactory extends CipherFactory {
 
 	byte[] cipherDecrypt0(SecretKeySpec secretKeySpec, byte[] data) throws GeneralSecurityException {
 		IvParameterSpec ivParameterSpec = new IvParameterSpec(data, 0, IV_LENGTH);
-		javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(CIPHER_ALGORITHM);
+		javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(CIPHER_ALG);
 
 		cipher.init(javax.crypto.Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
 		return cipher.doFinal(data, IV_LENGTH, data.length - IV_LENGTH);
@@ -120,19 +121,19 @@ public class AES128CipherFactory extends CipherFactory {
 		safeDestroy(secretKeySpec);
 	}
 
-	private class AES128Cipher extends Cipher {
+	private class AES256Cipher extends Cipher {
 
 		private final byte[] salt;
 		private final SecretKeySpec secretKeySpec;
 
-		AES128Cipher(byte[] salt, SecretKeySpec secretKeySpec) {
+		AES256Cipher(byte[] salt, SecretKeySpec secretKeySpec) {
 			this.salt = salt;
 			this.secretKeySpec = secretKeySpec;
 		}
 
 		@Override
 		public CipherFactory factory() {
-			return AES128CipherFactory.this;
+			return AES256CipherFactory.this;
 		}
 
 		@Override

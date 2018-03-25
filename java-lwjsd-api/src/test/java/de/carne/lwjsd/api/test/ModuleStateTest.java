@@ -14,26 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.carne.lwjsd.api;
+package de.carne.lwjsd.api.test;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import de.carne.lwjsd.api.ModuleState;
 
 /**
- * Operational states of a {@linkplain ServiceManager}.
+ * Test {@linkplain ModuleState} class.
  */
-public enum ServiceManagerState {
+class ModuleStateTest {
 
-	/**
-	 * {@linkplain ServiceManager} has been constructed but has not yet been started.
-	 */
-	CONFIGURED,
-
-	/**
-	 * {@linkplain ServiceManager} is up and running.
-	 */
-	RUNNING,
-
-	/**
-	 * {@linkplain ServiceManager} has been stopped and is no longer accessible.
-	 */
-	STOPPED
+	@Test
+	void testEnum() {
+		for (ModuleState state : ModuleState.values()) {
+			Assertions.assertEquals(state, ModuleState.valueOf(state.name()));
+		}
+	}
 
 }

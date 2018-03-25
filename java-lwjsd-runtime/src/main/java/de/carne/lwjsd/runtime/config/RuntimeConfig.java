@@ -24,7 +24,7 @@ import java.nio.file.Path;
  */
 public final class RuntimeConfig extends Config {
 
-	private URI controlBaseUri;
+	private URI baseUri;
 	private String sslProtocol;
 	private Path confDir;
 	private String sslKeyStoreFile;
@@ -37,7 +37,7 @@ public final class RuntimeConfig extends Config {
 	 * @param defaults the {@linkplain Config} object to use for initialization.
 	 */
 	public RuntimeConfig(Config defaults) {
-		this.controlBaseUri = defaults.getControlBaseUri();
+		this.baseUri = defaults.getBaseUri();
 		this.sslProtocol = defaults.getSslProtocol();
 		this.confDir = defaults.getConfDir();
 		this.sslKeyStoreFile = defaults.getSslKeyStoreFile();
@@ -46,17 +46,17 @@ public final class RuntimeConfig extends Config {
 	}
 
 	@Override
-	public URI getControlBaseUri() {
-		return this.controlBaseUri;
+	public URI getBaseUri() {
+		return this.baseUri;
 	}
 
 	/**
-	 * Set {@code controlBaseUri} option.
+	 * Set {@code baseUri} option.
 	 *
-	 * @param controlBaseUri the new option value.
+	 * @param baseUri the new option value.
 	 */
-	public void setControlBaseUri(URI controlBaseUri) {
-		this.controlBaseUri = controlBaseUri;
+	public void setBaseUri(URI baseUri) {
+		this.baseUri = baseUri;
 	}
 
 	@Override

@@ -17,172 +17,69 @@
 package de.carne.lwjsd.runtime.server;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import de.carne.check.Check;
 import de.carne.check.Nullable;
+import de.carne.io.Closeables;
+import de.carne.lwjsd.api.ModuleInfo;
+import de.carne.lwjsd.api.ModuleState;
 import de.carne.lwjsd.api.Service;
+import de.carne.lwjsd.api.ServiceContext;
 import de.carne.lwjsd.api.ServiceException;
-import de.carne.lwjsd.api.ServiceManager;
+import de.carne.lwjsd.api.ServiceId;
+import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.api.ServiceState;
 import de.carne.lwjsd.runtime.config.Config;
-import de.carne.lwjsd.runtime.config.SecretsStore;
+import de.carne.lwjsd.runtime.ws.JsonServiceId;
 import de.carne.nio.file.attribute.FileAttributes;
-import de.carne.util.Strings;
+import de.carne.util.Exceptions;
 import de.carne.util.logging.Log;
 
-/**
- * This class provides the low level module and service management functions required for server execution.
- */
-public final class ServiceStore {
+final class ServiceStore {
 
 	private static final Log LOG = new Log();
 
-	private static final String STATE_FILE = "lwjsd.state.xml";
+	private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper()
+			.enable(SerializationFeature.INDENT_OUTPUT);
+
+	private static final String STATE_FILE = "lwjsd.services.json";
 	private static final String MODULES_DIR = "modules";
-	private static final String SERVICE_MODULE_NAME_PATTERN = "service%1$d.moduleName";
-	private static final String SERVICE_CLASS_NAME_PATTERN = "service%1$d.className";
-	private static final String SERVICE_START_FLAG_PATTERN = "service%1$d.startFlag";
 
-	/**
-	 * Information attributes of a registered service.
-	 */
-	public abstract class Entry {
+	public static final String RUNTIME_MODULE_NAME = "";
 
-		private final Optional<String> moduleName;
-		private final String className;
-		private final boolean startFlag;
-
-		/**
-		 * Constructs a new {@linkplain Entry} instance.
-		 *
-		 * @param moduleName the (optional) service module name.
-		 * @param className the service class name.
-		 * @param startFlag the service start flag.
-		 */
-		protected Entry(Optional<String> moduleName, String className, boolean startFlag) {
-			this.moduleName = moduleName;
-			this.className = className;
-			this.startFlag = startFlag;
-		}
-
-		/**
-		 * Gets the (optional) service module name.
-		 *
-		 * @return the (optional) service module name.
-		 */
-		public Optional<String> moduleName() {
-			return this.moduleName;
-		}
-
-		/**
-		 * Gets the service class name.
-		 *
-		 * @return the service class name.
-		 */
-		public String className() {
-			return this.className;
-		}
-
-		/**
-		 * Gets the service start flag.
-		 *
-		 * @return the service start flag.
-		 */
-		public boolean getStartFlag() {
-			return this.startFlag;
-		}
-
-		/**
-		 * Gets the current service state.
-		 *
-		 * @return the current service state.
-		 * @see ServiceState
-		 */
-		public abstract ServiceState getState();
-
-		@Override
-		public String toString() {
-			return formatServiceName(this.moduleName, this.className);
-		}
-
-	}
-
-	/**
-	 * Formats a service name.
-	 *
-	 * @param moduleName the (optional) service module.
-	 * @param className the service class name.
-	 * @return the formatted service name.
-	 */
-	public static String formatServiceName(Optional<String> moduleName, String className) {
-		StringBuilder buffer = new StringBuilder(className);
-
-		moduleName.ifPresent(name -> buffer.append('@').append(name));
-		return buffer.toString();
-	}
-
-	private class RuntimeEntry extends Entry {
-
-		private ServiceState state = ServiceState.REGISTERED;
-		@Nullable
-		private Service service = null;
-
-		public RuntimeEntry(Optional<String> moduleName, String className, boolean startFlag) {
-			super(moduleName, className, startFlag);
-		}
-
-		@Override
-		public ServiceState getState() {
-			return this.state;
-		}
-
-		public Service getService() {
-			return Check.notNull(this.service);
-		}
-
-		public void updateState(ServiceState state, @Nullable Service service) {
-			this.state = state;
-			this.service = service;
-		}
-
-	}
-
+	private final ServiceFactory serviceFactory = this::getService;
+	private final Map<String, ClassLoader> moduleCache = new HashMap<>();
+	private final Map<ServiceId, Service> serviceCache = new HashMap<>();
+	private final Map<ServiceId, ServiceInstance> serviceInstances = new HashMap<>();
+	private final ServiceContext serviceContext;
 	private final Path modulesDir;
 	private final Path stateFile;
-	private final Map<String, RuntimeEntry> stateMap = new HashMap<>();
-	private final Map<String, ClassLoader> moduleMap = new HashMap<>();
 
-	private ServiceStore(Path modulesDir, Path stateFile) {
+	private ServiceStore(ServiceContext serviceContext, Path modulesDir, Path stateFile) {
+		this.serviceContext = serviceContext;
 		this.modulesDir = modulesDir;
 		this.stateFile = stateFile;
+		this.moduleCache.put(RUNTIME_MODULE_NAME, getClass().getClassLoader());
 	}
 
-	/**
-	 * Creates a new {@linkplain ServiceStore} instance by loading or (if not yet existing) creating the necessary state
-	 * data.
-	 *
-	 * @param config the {@linkplain Config} object to use for store initialization.
-	 * @return the created {@linkplain ServiceStore} instance.
-	 * @throws IOException if an I/O error occurs while accessing the store data.
-	 */
-	public static ServiceStore open(Config config) throws IOException {
+	public static ServiceStore create(ServiceContext serviceContext, Config config) throws IOException {
 		Path stateDir = config.getStateDir();
 
 		Files.createDirectories(stateDir, FileAttributes.userDirectoryDefault(stateDir));
 
-		Path modulesDir = stateDir.resolve(stateDir);
+		Path modulesDir = stateDir.resolve(MODULES_DIR);
 
 		LOG.info("Using modules directory ''{0}''...", modulesDir);
 
@@ -192,162 +89,359 @@ public final class ServiceStore {
 
 		LOG.info("Using state file ''{0}''...", stateFile);
 
-		Properties state = new Properties();
-		boolean syncStore = false;
+		ServiceStore serviceStore = new ServiceStore(serviceContext, modulesDir, stateFile);
 
 		if (Files.exists(stateFile)) {
-			try (InputStream stateStream = Files.newInputStream(stateFile, StandardOpenOption.READ)) {
-				state.loadFromXML(stateStream);
+			JsonServiceStore json = JSON_OBJECT_MAPPER.readValue(stateFile.toFile(), JsonServiceStore.class);
+
+			for (JsonServiceStoreService jsonService : json.getServices()) {
+				serviceStore.restoreServiceRegistration(jsonService);
 			}
-		} else {
-			syncStore = true;
 		}
-
-		ServiceStore serviceStore = new ServiceStore(modulesDir, stateFile);
-		Integer serviceIndex = Integer.valueOf(0);
-
-		while (true) {
-			String moduleNameKey = String.format(SERVICE_MODULE_NAME_PATTERN, serviceIndex);
-			String moduleNameValue = state.getProperty(moduleNameKey);
-			String classNameKey = String.format(SERVICE_CLASS_NAME_PATTERN, serviceIndex);
-			String classNameValue = state.getProperty(classNameKey);
-			String startFlagKey = String.format(SERVICE_START_FLAG_PATTERN, serviceIndex);
-			String startFlagValue = state.getProperty(startFlagKey);
-
-			if (moduleNameValue == null && classNameValue == null && startFlagValue == null) {
-				break;
-			}
-
-			String moduleName = Strings.trim(moduleNameValue);
-			String className = Strings.safeTrim(classNameValue);
-			boolean startFlag = Boolean.parseBoolean(Strings.safeTrim(startFlagValue));
-
-			if (moduleNameValue != null && Strings.isEmpty(classNameValue)) {
-				LOG.warning("Ignoring service entry with invalid module name (''{0}'' = ''{1}'')", moduleNameKey,
-						moduleNameValue);
-			} else if (Strings.isEmpty(classNameValue)) {
-				LOG.warning("Ignoring service entry with invalid class name (''{0}'' = ''{1}'')", moduleNameKey,
-						moduleNameValue);
-			} else {
-				serviceStore.registerService(Optional.ofNullable(moduleName), className, startFlag);
-			}
-			serviceIndex = Integer.valueOf(serviceIndex.intValue() + 1);
-		}
-		if (syncStore) {
-			serviceStore.syncStore();
-		}
+		serviceStore.syncStore0();
 		return serviceStore;
 	}
 
-	private synchronized void syncStore() throws IOException {
-		Properties state = new Properties();
-		Integer serviceIndex = Integer.valueOf(0);
+	private void syncStore0() throws IOException {
+		Collection<JsonServiceStoreService> jsonServices = new ArrayList<>(this.serviceInstances.size());
 
-		for (RuntimeEntry entry : this.stateMap.values()) {
-			String moduleNameKey = String.format(SERVICE_MODULE_NAME_PATTERN, serviceIndex);
-			String classNameKey = String.format(SERVICE_CLASS_NAME_PATTERN, serviceIndex);
-			String startFlagKey = String.format(SERVICE_START_FLAG_PATTERN, serviceIndex);
+		for (ServiceInstance serviceInstance : this.serviceInstances.values()) {
+			JsonServiceId jsonServiceId = new JsonServiceId(serviceInstance.id());
+			JsonServiceStoreService jsonService = new JsonServiceStoreService(jsonServiceId,
+					serviceInstance.getAutoStartFlag());
 
-			entry.moduleName().ifPresent(name -> state.setProperty(moduleNameKey, name));
-			state.setProperty(classNameKey, entry.className());
-			state.setProperty(startFlagKey, Boolean.toString(entry.getStartFlag()));
-			serviceIndex = Integer.valueOf(serviceIndex.intValue() + 1);
+			jsonServices.add(jsonService);
 		}
-		try (OutputStream stateStream = Files.newOutputStream(this.stateFile, StandardOpenOption.WRITE,
-				StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-			state.storeToXML(stateStream, null);
-		}
-		LOG.notice("Created/updated state has been written to file ''{0}''...", this.stateFile);
+
+		JsonServiceStore json = new JsonServiceStore(jsonServices);
+
+		JSON_OBJECT_MAPPER.writeValue(this.stateFile.toFile(), json);
+
+		LOG.info("Service states have been written to file ''{0}''", this.stateFile);
 	}
 
-	/**
-	 * Registers a new service entry into the store.
-	 *
-	 * @param moduleName the (optional) service module name.
-	 * @param className the service class name.
-	 * @param startFlag the service start flag.
-	 * @throws IOException if an I/O error occurs while updating the store data.
-	 */
-	public synchronized void registerService(Optional<String> moduleName, String className, boolean startFlag)
-			throws IOException {
-		RuntimeEntry entry = new RuntimeEntry(moduleName, className, startFlag);
+	public void syncStore() throws ServiceManagerException {
+		try {
+			syncStore0();
+		} catch (IOException e) {
+			throw new ServiceManagerException(e, "Failed to write service states file ''{0}''", this.stateFile);
+		}
+	}
 
-		if (!this.stateMap.containsKey(className)) {
-			this.stateMap.put(entry.className(), entry);
-			syncStore();
-			LOG.notice("Registered new service ''{0}''", entry);
+	public synchronized Collection<ModuleInfo> queryModuleStatus() throws ServiceManagerException {
+		Collection<ModuleInfo> moduleInfos;
+
+		try (Stream<Path> paths = Files.walk(this.modulesDir, 0)) {
+			moduleInfos = paths.filter(path -> path.toString().endsWith(".jar")).map(path -> {
+				String moduleName = path.getFileName().toString();
+				ModuleState moduleState = (this.moduleCache.containsKey(moduleName) ? ModuleState.LOADED
+						: ModuleState.REGISTERED);
+
+				return new ModuleInfo(moduleName, moduleState);
+			}).collect(Collectors.toList());
+		} catch (IOException e) {
+			throw new ServiceManagerException(e, "Failed to scan registered modules");
+		}
+		return moduleInfos;
+	}
+
+	public synchronized Collection<ServiceInfo> queryServiceStatus() {
+		Collection<ServiceInfo> serviceInfos = new ArrayList<>();
+
+		for (ServiceInstance serviceInstance : this.serviceInstances.values()) {
+			serviceInfos.add(new ServiceInfo(serviceInstance.id(), serviceInstance.getState(),
+					serviceInstance.getAutoStartFlag()));
+		}
+		return serviceInfos;
+	}
+
+	public synchronized void registerService(ServiceId serviceId, boolean autoStartFlag) {
+		LOG.info("Registering service ''{0}''...", serviceId);
+
+		if (!this.serviceInstances.containsKey(serviceId)) {
+			this.serviceInstances.put(serviceId, new ServiceInstance(this.serviceFactory, serviceId, autoStartFlag));
+
+			LOG.notice("Service ''{0}'' registered", serviceId);
 		} else {
-			LOG.debug("Ignoring register request for already registered service ''{0}''", entry);
+			LOG.info("Service ''{0}'' already registered", serviceId);
 		}
 	}
 
-	/**
-	 * Queries all currently registered service entries.
-	 *
-	 * @return Collection of all currently registered service entries.
-	 */
-	public synchronized Collection<Entry> queryEntries() {
-		return new ArrayList<>(this.stateMap.values());
+	public synchronized <T extends Service> T getService(Class<T> serviceClass) throws ServiceManagerException {
+		Service foundService = null;
+
+		for (Service service : this.serviceCache.values()) {
+			if (serviceClass.isAssignableFrom(service.getClass())) {
+				foundService = service;
+				break;
+			}
+		}
+		if (foundService == null) {
+			throw new ServiceManagerException("Failed to get service of type {0}", serviceClass.getName());
+		}
+		return serviceClass.cast(foundService);
 	}
 
-	public synchronized void startService(String className, ServiceManager serviceManager, SecretsStore secretsStore)
-			throws ServiceManagerException {
-		RuntimeEntry serviceEntry = this.stateMap.get(className);
+	public synchronized void autoStartServices() {
+		LOG.info("Auto starting services...");
 
-		if (serviceEntry == null) {
-			throw new ServiceManagerException("Failed to start unknown service ''{0}''", className);
+		// Copy affected ids first, as implicit module loading may register new services
+		Collection<ServiceId> autoStartServiceIds = this.serviceInstances.values().stream()
+				.filter(ServiceInstance::getAutoStartFlag).map(ServiceInstance::id).collect(Collectors.toList());
+
+		for (ServiceId autoStartServiceId : autoStartServiceIds) {
+			try {
+				startService(autoStartServiceId, true);
+			} catch (ServiceManagerException e) {
+				LOG.warning(e, Exceptions.toString(e));
+			}
+		}
+	}
+
+	public synchronized void startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException {
+		LOG.info("Starting service ''{0}''...", serviceId);
+
+		ServiceInstance serviceInstance = this.serviceInstances.get(serviceId);
+
+		if (serviceInstance == null) {
+			throw new ServiceManagerException("Failed to start unknown service ''{0}''", serviceId);
 		}
 
-		if (serviceEntry.getState() == ServiceState.REGISTERED) {
-			LOG.info("Loading service ''{0}''", serviceEntry);
+		ServiceState serviceState = serviceInstance.getState();
 
-			ClassLoader serviceLoader = getServiceLoader(serviceEntry.moduleName(), secretsStore);
-			Service service;
+		while (serviceState != ServiceState.RUNNING) {
+			switch (serviceState) {
+			case REGISTERED:
+				LOG.info("Loading service ''{0}''...", serviceId);
+
+				try {
+					serviceInstance.service().load(this.serviceContext);
+				} catch (ServiceException e) {
+					throw new ServiceManagerException(e, "Failed to load service ''{0}''", serviceId);
+				}
+				serviceInstance.setState(ServiceState.LOADED);
+
+				LOG.notice("Service ''{0}'' loaded", serviceId);
+				break;
+			case LOADED:
+				try {
+					serviceInstance.service().start(this.serviceContext);
+				} catch (ServiceException e) {
+					throw new ServiceManagerException(e, "Failed to start service ''{0}''", serviceId);
+				}
+				serviceInstance.setAutoStartFlag(autoStart);
+				serviceInstance.setState(ServiceState.RUNNING);
+
+				LOG.notice("Service ''{0}'' up and running", serviceId);
+				break;
+			case RUNNING:
+				LOG.info("Service ''{0}'' already up and running", serviceId);
+				break;
+			}
+			serviceState = serviceInstance.getState();
+		}
+	}
+
+	public synchronized void stopService(ServiceId serviceId, boolean unload) throws ServiceManagerException {
+		LOG.info("Stopping service ''{0}''...", serviceId);
+
+		ServiceInstance serviceInstance = this.serviceInstances.get(serviceId);
+
+		if (serviceInstance == null) {
+			throw new ServiceManagerException("Failed to stop unknown service ''{0}''", serviceId);
+		}
+
+		ServiceState targetServiceState = (unload ? ServiceState.REGISTERED : ServiceState.LOADED);
+		ServiceState serviceState = serviceInstance.getState();
+
+		while (serviceState != ServiceState.REGISTERED && serviceState != targetServiceState) {
+			switch (serviceState) {
+			case RUNNING:
+				try {
+					serviceInstance.service().stop(this.serviceContext);
+				} catch (ServiceException e) {
+					throw new ServiceManagerException(e, "Failed to stop service ''{0}''", serviceId);
+				}
+				serviceInstance.setState(ServiceState.LOADED);
+
+				LOG.notice("Service ''{0}'' has been stopped", serviceId);
+				break;
+			case LOADED:
+				try {
+					serviceInstance.service().unload(this.serviceContext);
+				} catch (ServiceException e) {
+					throw new ServiceManagerException(e, "Failed to unload service ''{0}''", serviceId);
+				}
+				serviceInstance.setState(ServiceState.REGISTERED);
+
+				LOG.notice("Service ''{0}'' has been unloaded", serviceId);
+				break;
+			case REGISTERED:
+				LOG.info("Service ''{0}'' already stopped and unloaded", serviceId);
+				break;
+			}
+			serviceState = serviceInstance.getState();
+		}
+	}
+
+	public synchronized void unloadAllServices() {
+		LOG.info("Unloading all services...");
+
+		for (ServiceInstance serviceInstance : this.serviceInstances.values()) {
+			try {
+				stopService(serviceInstance.id(), true);
+			} catch (ServiceManagerException e) {
+				LOG.warning(e, Exceptions.toString(e));
+			}
+		}
+	}
+
+	public synchronized void close() {
+		this.serviceInstances.clear();
+		this.serviceCache.clear();
+		this.moduleCache.values().forEach(Closeables::safeClose);
+		this.moduleCache.clear();
+	}
+
+	private void restoreServiceRegistration(JsonServiceStoreService jsonService) {
+		ServiceId serviceId = jsonService.getId().toSource();
+
+		LOG.info("Restoring service registration ''{0}''...", serviceId);
+
+		registerService(serviceId, jsonService.getAutoStartFlag());
+	}
+
+	private ClassLoader loadModule(String moduleName) {
+		ClassLoader loader = this.moduleCache.get(moduleName);
+
+		if (loader == null) {
+			throw Check.fail();
+		}
+		return loader;
+	}
+
+	private Service getService(ServiceId serviceId) throws ServiceManagerException {
+		Service service = this.serviceCache.get(serviceId);
+
+		if (service == null) {
+			LOG.info("Instantiating service ''{0}''...", serviceId);
+
+			ClassLoader loader = loadModule(serviceId.moduleName());
 
 			try {
-				service = serviceLoader.loadClass(className).asSubclass(Service.class).getConstructor().newInstance();
-				service.load(serviceManager);
-			} catch (ReflectiveOperationException | ServiceException e) {
-				throw new ServiceManagerException(e, "Failed to load server ''{0}''", serviceEntry);
+				service = loader.loadClass(serviceId.serviceName()).asSubclass(Service.class).getConstructor()
+						.newInstance();
+				this.serviceCache.put(serviceId, service);
+			} catch (ReflectiveOperationException e) {
+				throw new ServiceManagerException(e, "Failed to instantiate service ''{0}''", serviceId);
 			}
-			serviceEntry.updateState(ServiceState.LOADED, service);
-
-			LOG.notice("Loaded service ''{0}''", serviceEntry);
 		}
-		if (serviceEntry.getState() == ServiceState.LOADED) {
-			LOG.info("Starting service ''{0}''", serviceEntry);
-
-			Service service = serviceEntry.getService();
-
-			try {
-				service.start(serviceManager);
-			} catch (ServiceException e) {
-				throw new ServiceManagerException(e, "Failed to start server ''{0}''", serviceEntry);
-			}
-			serviceEntry.updateState(ServiceState.RUNNING, service);
-
-			LOG.notice("Started service ''{0}''", serviceEntry);
-		}
+		return service;
 	}
 
-	private ClassLoader getServiceLoader(Optional<String> optionalModuleName, SecretsStore secretsStore)
-			throws ServiceManagerException {
-		ClassLoader serviceLoader;
+	private static class ServiceInstance {
 
-		if (optionalModuleName.isPresent()) {
-			String moduleName = optionalModuleName.get();
+		private final ServiceFactory factory;
+		private final ServiceId id;
+		private boolean autoStartFlag;
+		private ServiceState state = ServiceState.REGISTERED;
 
-			serviceLoader = this.moduleMap.get(moduleName);
-			if (serviceLoader == null) {
-				LOG.info("Loading module ''{0}''...", moduleName);
-
-				// TODO
-				serviceLoader = Thread.currentThread().getContextClassLoader();
-			}
-		} else {
-			serviceLoader = Thread.currentThread().getContextClassLoader();
+		ServiceInstance(ServiceFactory factory, ServiceId id, boolean autoStartFlag) {
+			this.factory = factory;
+			this.id = id;
+			this.autoStartFlag = autoStartFlag;
 		}
-		return serviceLoader;
+
+		public ServiceId id() {
+			return this.id;
+		}
+
+		public Service service() throws ServiceManagerException {
+			return this.factory.get(this.id);
+		}
+
+		public boolean getAutoStartFlag() {
+			return this.autoStartFlag;
+		}
+
+		public void setAutoStartFlag(boolean autoStartFlag) {
+			this.autoStartFlag = autoStartFlag;
+		}
+
+		public ServiceState getState() {
+			return this.state;
+		}
+
+		public void setState(ServiceState state) {
+			this.state = state;
+		}
+
+	}
+
+	private static final class JsonServiceStore {
+
+		@Nullable
+		private Collection<JsonServiceStoreService> services;
+
+		// Implicitly used by ObjectMapper
+		@SuppressWarnings("unused")
+		public JsonServiceStore() {
+			// Nothing to do here
+		}
+
+		public JsonServiceStore(Collection<JsonServiceStoreService> services) {
+			this.services = services;
+		}
+
+		public Collection<JsonServiceStoreService> getServices() {
+			return Check.notNull(this.services);
+		}
+
+		// Implicitly used by ObjectMapper
+		@SuppressWarnings("unused")
+		public void setServices(Collection<JsonServiceStoreService> services) {
+			this.services = services;
+		}
+
+	}
+
+	private static final class JsonServiceStoreService {
+
+		@Nullable
+		private JsonServiceId id;
+		private boolean autoStartFlag;
+
+		// Implicitly used by ObjectMapper
+		@SuppressWarnings("unused")
+		public JsonServiceStoreService() {
+			// Nothing to do here
+		}
+
+		public JsonServiceStoreService(JsonServiceId id, boolean autoStartFlag) {
+			this.id = id;
+			this.autoStartFlag = autoStartFlag;
+		}
+
+		public JsonServiceId getId() {
+			return Check.notNull(this.id);
+		}
+
+		// Implicitly used by ObjectMapper
+		@SuppressWarnings("unused")
+		public void setId(JsonServiceId id) {
+			this.id = id;
+		}
+
+		public boolean getAutoStartFlag() {
+			return this.autoStartFlag;
+		}
+
+		// Implicitly used by ObjectMapper
+		@SuppressWarnings("unused")
+		public void setAutoStartFlag(boolean autoStartFlag) {
+			this.autoStartFlag = autoStartFlag;
+		}
+
 	}
 
 }

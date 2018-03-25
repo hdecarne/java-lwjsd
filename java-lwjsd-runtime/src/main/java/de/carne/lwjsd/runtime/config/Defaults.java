@@ -30,7 +30,7 @@ public final class Defaults extends Config {
 
 	private static final Defaults DEFAULTS = new Defaults();
 
-	private final URI controlBaseUri = getUriDefault(".controlBaseUri", "https://localhost:5871");
+	private final URI baseUri = getUriDefault(".baseUri", "https://localhost:5871");
 	private final String sslProtocol = getStringDefault(".sslProtocol", "TLSv1.2");
 	private final Path confDir = getPathDefault(".confDir", System.getProperty("user.home", "."), ".lwjsd");
 	private final String sslKeyStoreFile = getStringDefault(".sslKeyStoreFile", "lwjsd.jks");
@@ -51,8 +51,8 @@ public final class Defaults extends Config {
 	}
 
 	@Override
-	public URI getControlBaseUri() {
-		return this.controlBaseUri;
+	public URI getBaseUri() {
+		return this.baseUri;
 	}
 
 	@Override

@@ -30,7 +30,7 @@ import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
 import de.carne.check.Nullable;
-import de.carne.util.Exceptions;
+import de.carne.io.Closeables;
 import de.carne.util.logging.Log;
 
 /**
@@ -90,7 +90,7 @@ public final class SyslogDestination implements Closeable {
 				if (error == null) {
 					error = e;
 				} else {
-					Exceptions.suppress(e, error);
+					error.addSuppressed(e);
 				}
 				retry++;
 				closeConnection(checkedConnection);
@@ -197,11 +197,7 @@ public final class SyslogDestination implements Closeable {
 			try {
 				this.socket.connect(address);
 			} catch (IOException e) {
-				try {
-					this.socket.close();
-				} catch (IOException suppressed) {
-					Exceptions.suppress(e, suppressed);
-				}
+				Closeables.safeClose(e, this.socket);
 				throw e;
 			}
 		}

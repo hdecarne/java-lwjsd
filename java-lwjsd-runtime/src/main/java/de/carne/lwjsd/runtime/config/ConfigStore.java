@@ -43,7 +43,7 @@ public final class ConfigStore extends Config {
 	 */
 	public static final String CONFIG_FILE = "lwjsd.conf";
 
-	private final URIConfigStoreOption controlBaseUri;
+	private final URIConfigStoreOption baseUri;
 	private final StringConfigStoreOption sslProtocol;
 	private final PathConfigStoreOption confDir;
 	private final StringConfigStoreOption sslKeyStoreFile;
@@ -52,13 +52,13 @@ public final class ConfigStore extends Config {
 	private final Map<String, ConfigStoreOption> optionMap = new LinkedHashMap<>();
 
 	private ConfigStore(Config config) {
-		this.controlBaseUri = new URIConfigStoreOption("controlBaseUri", true, config.getControlBaseUri());
+		this.baseUri = new URIConfigStoreOption("baseUri", true, config.getBaseUri());
 		this.sslProtocol = new StringConfigStoreOption("sslProtocol", true, config.getSslProtocol());
 		this.confDir = new PathConfigStoreOption("confDir", false, config.getConfDir());
 		this.sslKeyStoreFile = new StringConfigStoreOption("sslKeyStoreFile", true, config.getSslKeyStoreFile());
 		this.sslKeyStoreSecret = new StringConfigStoreOption("sslKeyStoreSecret", true, config.getSslKeyStoreSecret());
 		this.stateDir = new PathConfigStoreOption("stateDir", false, config.getStateDir());
-		this.optionMap.put(this.controlBaseUri.name(), this.controlBaseUri);
+		this.optionMap.put(this.baseUri.name(), this.baseUri);
 		this.optionMap.put(this.sslProtocol.name(), this.sslProtocol);
 		this.optionMap.put(this.confDir.name(), this.confDir);
 		this.optionMap.put(this.sslKeyStoreFile.name(), this.sslKeyStoreFile);
@@ -73,7 +73,7 @@ public final class ConfigStore extends Config {
 	 * @return the created {@linkplain ConfigStore} instance.
 	 * @throws IOException if an I/O error occurs while accessing the store data.
 	 */
-	public static ConfigStore open(Config config) throws IOException {
+	public static ConfigStore create(Config config) throws IOException {
 		ConfigStore configStore = new ConfigStore(config);
 
 		configStore.loadConfigFile();
@@ -166,17 +166,17 @@ public final class ConfigStore extends Config {
 	}
 
 	@Override
-	public URI getControlBaseUri() {
-		return this.controlBaseUri.get();
+	public URI getBaseUri() {
+		return this.baseUri.get();
 	}
 
 	/**
-	 * Sets {@code controlBaseUri} option.
+	 * Sets {@code baseUri} option.
 	 *
-	 * @param controlBaseUri the new option value.
+	 * @param baseUri the new option value.
 	 */
-	public void setControlBaseUri(URI controlBaseUri) {
-		this.controlBaseUri.accept(controlBaseUri);
+	public void setBaseUri(URI baseUri) {
+		this.baseUri.accept(baseUri);
 	}
 
 	@Override

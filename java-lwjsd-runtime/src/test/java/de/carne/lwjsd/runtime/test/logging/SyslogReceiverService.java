@@ -17,34 +17,34 @@
 package de.carne.lwjsd.runtime.test.logging;
 
 import de.carne.lwjsd.api.Service;
+import de.carne.lwjsd.api.ServiceContext;
 import de.carne.lwjsd.api.ServiceException;
-import de.carne.lwjsd.api.ServiceManager;
 import de.carne.util.logging.Log;
 
 /**
  * Test {@linkplain Service} providing server side Syslog functions for unit testing.
  */
-public class SyslogService implements Service {
+public class SyslogReceiverService implements Service {
 
 	private final static Log LOG = new Log();
 
 	@Override
-	public void load(ServiceManager serviceManager) throws ServiceException {
+	public void load(ServiceContext context) throws ServiceException {
 		LOG.info("Loading...");
 	}
 
 	@Override
-	public void start(ServiceManager serviceManager) throws ServiceException {
+	public void start(ServiceContext context) throws ServiceException {
 		LOG.info("Starting...");
 	}
 
 	@Override
-	public void stop(ServiceManager serviceManager) throws ServiceException {
+	public void stop(ServiceContext context) throws ServiceException {
 		LOG.info("Stopping...");
 	}
 
 	@Override
-	public void unload(ServiceManager serviceManager) throws ServiceException {
+	public void unload(ServiceContext context) throws ServiceException {
 		LOG.info("Unloading...");
 	}
 

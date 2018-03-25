@@ -21,11 +21,14 @@ import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import de.carne.lwjsd.api.ServiceId;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.api.ServiceManagerState;
+import de.carne.lwjsd.api.ServiceState;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
 import de.carne.lwjsd.runtime.server.Server;
 import de.carne.lwjsd.runtime.test.TestConfig;
+import de.carne.lwjsd.runtime.test.TestService;
 
 /**
  * Test {@linkplain Server} class.
@@ -33,24 +36,58 @@ import de.carne.lwjsd.runtime.test.TestConfig;
 class ServerTest {
 
 	@Test
-	void testServerStartStop() throws IOException, ServiceManagerException, InterruptedException {
+	void testServer() throws IOException, ServiceManagerException, InterruptedException {
 		RuntimeConfig config = TestConfig.prepareConfig();
 
-		try (Server server = new Server(config)) {
-			Assertions.assertEquals(ServiceManagerState.CONFIGURED, server.queryStatus());
-
-			server.start(true);
-
-			Assertions.assertEquals(ServiceManagerState.RUNNING, server.queryStatus());
-
-			server.requestStop();
-			while (server.processRequest()) {
-				server.sleep();
-			}
-
-			Assertions.assertEquals(ServiceManagerState.STOPPED, server.queryStatus());
+		try {
+			testServerRun1(config);
+			testServerRun2(config);
 		} finally {
 			TestConfig.discardConfig(config);
+		}
+	}
+
+	private void testServerRun1(RuntimeConfig config) throws ServiceManagerException, InterruptedException {
+		try (Server server = new Server(config)) {
+			Assertions.assertEquals(ServiceManagerState.CONFIGURED, server.queryStatus().state());
+
+			ServiceId testServiceId = server.registerService(TestService.class.getName());
+
+			server.start(false);
+
+			Assertions.assertEquals(ServiceManagerState.RUNNING, server.queryStatus().state());
+
+			server.startService(testServiceId, true);
+
+			TestService testService = server.getService(TestService.class);
+
+			Assertions.assertEquals(ServiceState.RUNNING, testService.state());
+
+			server.stopService(testServiceId);
+
+			Assertions.assertEquals(ServiceState.LOADED, testService.state());
+
+			server.requestStop();
+			server.getServerThread().join();
+
+			Assertions.assertEquals(ServiceState.REGISTERED, testService.state());
+			Assertions.assertEquals(ServiceManagerState.STOPPED, server.queryStatus().state());
+		}
+	}
+
+	private void testServerRun2(RuntimeConfig config) throws ServiceManagerException, InterruptedException {
+		try (Server server = new Server(config)) {
+			server.start(false);
+
+			TestService testService = server.getService(TestService.class);
+
+			Assertions.assertEquals(ServiceState.RUNNING, testService.state());
+
+			server.requestStop();
+			server.getServerThread().join();
+
+			Assertions.assertEquals(ServiceState.REGISTERED, testService.state());
+			Assertions.assertEquals(ServiceManagerState.STOPPED, server.queryStatus().state());
 		}
 	}
 

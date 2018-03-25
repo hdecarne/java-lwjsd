@@ -67,17 +67,17 @@ public class LwjsdMain implements ApplicationMain {
 
 	@Override
 	public int run(String[] args) {
-		CmdLineProcessor logConfigCmdLine = buildLogConfigCmdLine(args);
+		CmdLineProcessor bootCmdLine = buildBootCmdLine(args);
 		int status;
 
 		try {
-			logConfigCmdLine.process();
+			bootCmdLine.process();
 
-			LOG.info("Command ''{0}''...", logConfigCmdLine);
+			LOG.info("Running command ''{0}''...", bootCmdLine);
 
-			CmdLineProcessor lwjsdConfigCmdLine = buildLwjsdConfigCmdLine(args);
+			CmdLineProcessor commandCmdLine = buildCommandCmdLine(args);
 
-			lwjsdConfigCmdLine.process();
+			commandCmdLine.process();
 			switch (this.command) {
 			case HELP:
 				status = runHelpCommand();
@@ -92,7 +92,7 @@ public class LwjsdMain implements ApplicationMain {
 				throw Check.fail();
 			}
 		} catch (Exception e) {
-			LOG.error(e, "Command ''{0}'' failed with exception: {1}", logConfigCmdLine, Exceptions.toString(e));
+			LOG.error(e, "Command ''{0}'' failed with exception: {1}", bootCmdLine, Exceptions.toString(e));
 			status = -1;
 		} finally {
 			Logs.flush();
@@ -124,9 +124,6 @@ public class LwjsdMain implements ApplicationMain {
 	private int runServerCommand() throws InterruptedException, ServiceManagerException {
 		try (Server server = new Server(this.config)) {
 			server.start(true);
-			while (server.processRequest()) {
-				server.sleep();
-			}
 		}
 		return 0;
 	}
@@ -139,7 +136,7 @@ public class LwjsdMain implements ApplicationMain {
 		}
 	}
 
-	private CmdLineProcessor buildLogConfigCmdLine(String[] args) {
+	private CmdLineProcessor buildBootCmdLine(String[] args) {
 		CmdLineProcessor cmdLine = new CmdLineProcessor(name(), args);
 
 		cmdLine.onSwitch(arg -> applyLogConfig(Logs.CONFIG_VERBOSE)).arg("--verbose");
@@ -149,13 +146,13 @@ public class LwjsdMain implements ApplicationMain {
 		return cmdLine;
 	}
 
-	private CmdLineProcessor buildLwjsdConfigCmdLine(String[] args) {
+	private CmdLineProcessor buildCommandCmdLine(String[] args) {
 		CmdLineProcessor cmdLine = new CmdLineProcessor(name(), args);
 
 		cmdLine.onSwitch(CmdLineProcessor::ignore).arg("--verbose");
 		cmdLine.onSwitch(CmdLineProcessor::ignore).arg("--debug");
 		cmdLine.onSwitch(this::setMode).arg("--help").arg("--client").arg("--server");
-		cmdLine.onOption(this::setControlBaseUri).arg("--controlBaseUri");
+		cmdLine.onOption(this::setBaseUri).arg("--baseUri");
 		cmdLine.onUnnamedOption(CmdLineProcessor::ignore);
 		cmdLine.onUnknownArg(CmdLineProcessor::ignore);
 		return cmdLine;
@@ -165,15 +162,15 @@ public class LwjsdMain implements ApplicationMain {
 		this.command = Command.valueOf(arg.substring(2).toUpperCase());
 	}
 
-	private void setControlBaseUri(String arg, String option) {
-		URI controlBaseUri;
+	private void setBaseUri(String arg, String option) {
+		URI baseUri;
 
 		try {
-			controlBaseUri = new URI(option);
+			baseUri = new URI(option);
 		} catch (URISyntaxException e) {
 			throw new IllegalArgumentException("Invalid option for argument: " + arg, e);
 		}
-		this.config.setControlBaseUri(controlBaseUri);
+		this.config.setBaseUri(baseUri);
 	}
 
 }

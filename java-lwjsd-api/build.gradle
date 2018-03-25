@@ -1,0 +1,4 @@
+dependencies {
+	api("de.carne.common:java-default:8.+")
+	api("org.glassfish.grizzly:grizzly-http-server:2.4.+")
+}
