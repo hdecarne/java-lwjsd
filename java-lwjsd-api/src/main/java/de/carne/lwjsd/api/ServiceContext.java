@@ -46,7 +46,8 @@ public interface ServiceContext {
 
 	/**
 	 * Locates a {@linkplain Service} instance of a specific type.
-	 * 
+	 *
+	 * @param <T> the requested service type.
 	 * @param serviceClass the type of the {@linkplain Service} to locate.
 	 * @return the located {@linkplain Service} instance.
 	 * @throws ServiceManagerException if the service type is not available.
