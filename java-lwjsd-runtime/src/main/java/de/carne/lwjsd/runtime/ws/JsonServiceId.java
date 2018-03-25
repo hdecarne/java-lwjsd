@@ -16,6 +16,9 @@
  */
 package de.carne.lwjsd.runtime.ws;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import de.carne.check.Check;
 import de.carne.check.Nullable;
 import de.carne.lwjsd.api.ServiceId;
@@ -45,6 +48,17 @@ public final class JsonServiceId {
 	public JsonServiceId(ServiceId source) {
 		this.moduleName = source.moduleName();
 		this.serviceName = source.serviceName();
+	}
+
+	/**
+	 * Constructs empty {@linkplain JsonServiceId} instance.
+	 *
+	 * @param moduleName the module name.
+	 * @param serviceName the service name.
+	 */
+	public JsonServiceId(String moduleName, String serviceName) {
+		this.moduleName = moduleName;
+		this.serviceName = serviceName;
 	}
 
 	/**
@@ -90,6 +104,28 @@ public final class JsonServiceId {
 	 */
 	public ServiceId toSource() {
 		return new ServiceId(getModuleName(), getServiceName());
+	}
+
+	@Override
+	public String toString() {
+		return ":" + this.moduleName + ":" + this.serviceName;
+	}
+
+	private static final Pattern PARAM_PATTERN = Pattern.compile("^:([^:]*):([^:]*+)$");
+
+	/**
+	 * Decode a {@linkplain JsonServiceId} instance from a param string.
+	 *
+	 * @param param the param string to decode.
+	 * @return the decode {@linkplain JsonServiceId} instance.
+	 */
+	public static JsonServiceId valueOf(String param) {
+		Matcher matcher = PARAM_PATTERN.matcher(param);
+
+		if (!matcher.matches()) {
+			throw new IllegalArgumentException("Invalid parameter: '" + param + "'");
+		}
+		return new JsonServiceId(matcher.group(1), matcher.group(2));
 	}
 
 }

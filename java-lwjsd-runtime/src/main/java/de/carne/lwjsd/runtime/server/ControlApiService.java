@@ -23,6 +23,7 @@ import de.carne.check.Check;
 import de.carne.check.Nullable;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.runtime.ws.ControlApi;
+import de.carne.lwjsd.runtime.ws.JsonServiceId;
 import de.carne.lwjsd.runtime.ws.JsonServiceManagerInfo;
 import de.carne.util.ManifestInfos;
 
@@ -45,6 +46,31 @@ class ControlApiService implements ControlApi {
 	@Override
 	public void requestStop() throws ServiceManagerException {
 		getServer().requestStop();
+	}
+
+	@Override
+	public void loadModule(String moduleName) throws ServiceManagerException {
+		getServer().loadModule(moduleName);
+	}
+
+	@Override
+	public void deleteModule(String moduleName) throws ServiceManagerException {
+		getServer().deleteModule(moduleName);
+	}
+
+	@Override
+	public JsonServiceId registerService(String className) throws ServiceManagerException {
+		return new JsonServiceId(getServer().registerService(className));
+	}
+
+	@Override
+	public void startService(JsonServiceId serviceId, boolean autoStart) throws ServiceManagerException {
+		getServer().startService(serviceId.toSource(), autoStart);
+	}
+
+	@Override
+	public void stopService(JsonServiceId serviceId) throws ServiceManagerException {
+		getServer().stopService(serviceId.toSource());
 	}
 
 	private Server getServer() {

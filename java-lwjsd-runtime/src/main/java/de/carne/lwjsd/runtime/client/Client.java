@@ -43,6 +43,7 @@ import de.carne.lwjsd.runtime.security.CharSecret;
 import de.carne.lwjsd.runtime.security.Passwords;
 import de.carne.lwjsd.runtime.security.SecretsStore;
 import de.carne.lwjsd.runtime.ws.ControlApi;
+import de.carne.lwjsd.runtime.ws.JsonServiceId;
 import de.carne.util.Debug;
 import de.carne.util.Late;
 import de.carne.util.ManifestInfos;
@@ -179,32 +180,50 @@ public final class Client implements ServiceManager, AutoCloseable {
 
 	@Override
 	public void loadModule(String moduleName) throws ServiceManagerException {
-		// TODO Auto-generated method stub
-
+		try {
+			this.controlApiHolder.get().loadModule(moduleName);
+		} catch (ProcessingException e) {
+			throw mapProcessingException(e);
+		}
 	}
 
 	@Override
 	public void deleteModule(String moduleName) throws ServiceManagerException {
-		// TODO Auto-generated method stub
-
+		try {
+			this.controlApiHolder.get().deleteModule(moduleName);
+		} catch (ProcessingException e) {
+			throw mapProcessingException(e);
+		}
 	}
 
 	@Override
 	public ServiceId registerService(String className) throws ServiceManagerException {
-		// TODO Auto-generated method stub
-		return null;
+		ServiceId serviceId;
+
+		try {
+			serviceId = this.controlApiHolder.get().registerService(className).toSource();
+		} catch (ProcessingException e) {
+			throw mapProcessingException(e);
+		}
+		return serviceId;
 	}
 
 	@Override
 	public void startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException {
-		// TODO Auto-generated method stub
-
+		try {
+			this.controlApiHolder.get().startService(new JsonServiceId(serviceId), autoStart);
+		} catch (ProcessingException e) {
+			throw mapProcessingException(e);
+		}
 	}
 
 	@Override
 	public void stopService(ServiceId serviceId) throws ServiceManagerException {
-		// TODO Auto-generated method stub
-
+		try {
+			this.controlApiHolder.get().stopService(new JsonServiceId(serviceId));
+		} catch (ProcessingException e) {
+			throw mapProcessingException(e);
+		}
 	}
 
 	@Override
