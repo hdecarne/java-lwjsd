@@ -18,6 +18,7 @@ package de.carne.lwjsd.runtime.ws;
 
 import de.carne.check.Check;
 import de.carne.check.Nullable;
+import de.carne.lwjsd.api.ServiceId;
 import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceState;
 
@@ -27,7 +28,9 @@ import de.carne.lwjsd.api.ServiceState;
 public final class JsonServiceInfo {
 
 	@Nullable
-	private JsonServiceId id;
+	private String moduleName;
+	@Nullable
+	private String serviceName;
 	@Nullable
 	private ServiceState state;
 	private boolean autoStartFlag;
@@ -45,27 +48,48 @@ public final class JsonServiceInfo {
 	 * @param source the source object to use for initialization.
 	 */
 	public JsonServiceInfo(ServiceInfo source) {
-		this.id = new JsonServiceId(source.id());
+		ServiceId serviceId = source.id();
+
+		this.moduleName = serviceId.moduleName();
+		this.serviceName = serviceId.serviceName();
 		this.state = source.state();
 		this.autoStartFlag = source.autoStartFlag();
 	}
 
 	/**
-	 * Sets {@code id}.
+	 * Sets {@code moduleName}.
 	 *
-	 * @param id {@code id} attribute.
+	 * @param moduleName {@code moduleName} attribute.
 	 */
-	public void setId(JsonServiceId id) {
-		this.id = id;
+	public void setModuleName(String moduleName) {
+		this.moduleName = moduleName;
 	}
 
 	/**
-	 * Gets {@code id} attribute.
+	 * Gets {@code moduleName} attribute.
 	 *
-	 * @return {@code id} attribute.
+	 * @return {@code moduleName} attribute.
 	 */
-	public JsonServiceId getId() {
-		return Check.notNull(this.id);
+	public String getModuleName() {
+		return Check.notNull(this.moduleName);
+	}
+
+	/**
+	 * Sets {@code serviceName}.
+	 *
+	 * @param serviceName {@code serviceName} attribute.
+	 */
+	public void setServiceName(String serviceName) {
+		this.serviceName = serviceName;
+	}
+
+	/**
+	 * Gets {@code serviceName} attribute.
+	 *
+	 * @return {@code serviceName} attribute.
+	 */
+	public String getServiceName() {
+		return Check.notNull(this.serviceName);
 	}
 
 	/**
@@ -110,7 +134,7 @@ public final class JsonServiceInfo {
 	 * @return the transferred source object.
 	 */
 	public ServiceInfo toSource() {
-		return new ServiceInfo(getId().toSource(), getState(), getAutoStartFlag());
+		return new ServiceInfo(new ServiceId(getModuleName(), getServiceName()), getState(), getAutoStartFlag());
 	}
 
 }

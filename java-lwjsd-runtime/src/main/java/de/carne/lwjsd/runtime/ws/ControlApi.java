@@ -16,6 +16,8 @@
  */
 package de.carne.lwjsd.runtime.ws;
 
+import java.io.InputStream;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -25,6 +27,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import de.carne.lwjsd.api.Service;
 import de.carne.lwjsd.api.ServiceManager;
@@ -42,9 +47,9 @@ public interface ControlApi {
 	 * @return the version of the server side runtime.
 	 */
 	@GET
-	@Path("version")
+	@Path("getVersion")
 	@Produces(MediaType.TEXT_PLAIN)
-	String version();
+	String getVersion();
 
 	/**
 	 * Queries the status of this {@linkplain ServiceManager} instance.
@@ -62,20 +67,40 @@ public interface ControlApi {
 	 *
 	 * @throws ServiceManagerException if an error occurs while stopping the {@linkplain ServiceManager}.
 	 */
-	@POST
+	@DELETE
 	@Path("requestStop")
 	void requestStop() throws ServiceManagerException;
+
+	/**
+	 * Registers a {@linkplain Service} module and makes it available on the server.
+	 *
+	 * @param fileStream the file stream providing module data access.
+	 * @param fileDetails the {@linkplain FormDataContentDisposition} object providing module details access.
+	 * @param force whether to force unloading and overwriting of an already running {@linkplain Service} module with
+	 *        the same name.
+	 * @return the updated {@linkplain Service} module status.
+	 * @throws ServiceManagerException if an error occurs while registering the {@linkplain Service} module.
+	 */
+	@POST
+	@Path("registerModule")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(MediaType.APPLICATION_JSON)
+	JsonModuleInfo registerModule(@FormDataParam("file") InputStream fileStream,
+			@FormDataParam("file") FormDataContentDisposition fileDetails, @FormDataParam("force") boolean force)
+			throws ServiceManagerException;
 
 	/**
 	 * Loads an already registered {@linkplain Service} module and registers the provided {@linkplain Service}s.
 	 *
 	 * @param moduleName the name of the {@linkplain Service} module to load.
+	 * @return the updated {@linkplain Service} module status.
 	 * @throws ServiceManagerException if an error occurs while loading the {@linkplain Service} module.
 	 */
-	@POST
+	@PUT
 	@Path("loadModule")
 	@Consumes(MediaType.APPLICATION_JSON)
-	void loadModule(@QueryParam(value = "moduleName") String moduleName) throws ServiceManagerException;
+	@Produces(MediaType.APPLICATION_JSON)
+	JsonModuleInfo loadModule(@QueryParam(value = "moduleName") String moduleName) throws ServiceManagerException;
 
 	/**
 	 * Deletes an already registered {@linkplain Service} module.
@@ -89,40 +114,47 @@ public interface ControlApi {
 	void deleteModule(@QueryParam(value = "moduleName") String moduleName) throws ServiceManagerException;
 
 	/**
-	 * Registers a {@linkplain Service} provided by the current runtime environment.
+	 * Registers a {@linkplain Service} provided by the runtime environment.
 	 *
 	 * @param className the name of the class providing the {@linkplain Service}.
-	 * @return the registered service id.
+	 * @return the updated {@linkplain Service} status.
 	 * @throws ServiceManagerException if an error occurs while registering the {@linkplain Service}.
 	 */
-	@PUT
-	@Path("deleteModule")
+	@POST
+	@Path("registerService")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	JsonServiceId registerService(@QueryParam(value = "className") String className) throws ServiceManagerException;
+	JsonServiceInfo registerService(@QueryParam(value = "className") String className) throws ServiceManagerException;
 
 	/**
-	 * Starts a {@linkplain Service}.
+	 * Starts a previously registered {@linkplain Service}.
 	 *
-	 * @param serviceId the id of the {@linkplain Service} to start.
+	 * @param moduleName the name of the module providing the {@linkplain Service} to start.
+	 * @param serviceName the name of the {@linkplain Service} to start.
 	 * @param autoStart whether to always start the {@linkplain Service} on server start.
+	 * @return the updated {@linkplain Service} status.
 	 * @throws ServiceManagerException if an error occurs while starting the {@linkplain Service}.
 	 */
 	@POST
 	@Path("startService")
 	@Consumes(MediaType.APPLICATION_JSON)
-	void startService(@QueryParam(value = "serviceId") JsonServiceId serviceId,
-			@QueryParam(value = "autoStart") boolean autoStart) throws ServiceManagerException;
+	@Produces(MediaType.APPLICATION_JSON)
+	JsonServiceInfo startService(@QueryParam(value = "moduleName") String moduleName,
+			@QueryParam(value = "serviceName") String serviceName, @QueryParam(value = "autoStart") boolean autoStart)
+			throws ServiceManagerException;
 
 	/**
 	 * Stops a {@linkplain Service}.
 	 *
-	 * @param serviceId the id of the {@linkplain Service} to stop.
+	 * @param moduleName the name of the module providing the {@linkplain Service} to start.
+	 * @param serviceName the name of the {@linkplain Service} to start.
+	 * @return the updated {@linkplain Service} status.
 	 * @throws ServiceManagerException if an error occurs while stopping the {@linkplain Service}.
 	 */
 	@POST
 	@Path("stopService")
 	@Consumes(MediaType.APPLICATION_JSON)
-	void stopService(@QueryParam(value = "serviceId") JsonServiceId serviceId) throws ServiceManagerException;
+	JsonServiceInfo stopService(@QueryParam(value = "moduleName") String moduleName,
+			@QueryParam(value = "serviceName") String serviceName) throws ServiceManagerException;
 
 }

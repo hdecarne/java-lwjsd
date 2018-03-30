@@ -34,7 +34,7 @@ public class ServiceException extends Exception {
 	 * @see MessageFormat
 	 */
 	public ServiceException(String pattern, Object... arguments) {
-		super(MessageFormat.format(pattern, arguments));
+		super(arguments.length > 0 ? MessageFormat.format(pattern, arguments) : pattern);
 	}
 
 	/**
@@ -55,7 +55,7 @@ public class ServiceException extends Exception {
 	 * @see MessageFormat
 	 */
 	public ServiceException(Throwable cause, String pattern, Object... arguments) {
-		super(MessageFormat.format(pattern, arguments), cause);
+		super((arguments.length > 0 ? MessageFormat.format(pattern, arguments) : pattern), cause);
 	}
 
 }

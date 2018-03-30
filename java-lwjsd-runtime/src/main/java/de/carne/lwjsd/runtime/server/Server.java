@@ -18,6 +18,7 @@ package de.carne.lwjsd.runtime.server;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,9 +41,13 @@ import org.glassfish.grizzly.http.server.HttpHandlerRegistration;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
+import org.glassfish.jersey.jackson.JacksonFeature;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 
+import de.carne.io.IOUtil;
 import de.carne.lwjsd.api.ModuleInfo;
+import de.carne.lwjsd.api.ReasonMessage;
 import de.carne.lwjsd.api.Service;
 import de.carne.lwjsd.api.ServiceContext;
 import de.carne.lwjsd.api.ServiceId;
@@ -56,9 +61,13 @@ import de.carne.lwjsd.runtime.config.ConfigStore;
 import de.carne.lwjsd.runtime.security.CharSecret;
 import de.carne.lwjsd.runtime.security.Passwords;
 import de.carne.lwjsd.runtime.security.SecretsStore;
+import de.carne.lwjsd.runtime.ws.ControlApiExceptionMapper;
+import de.carne.nio.file.FileUtil;
+import de.carne.util.Debug;
 import de.carne.util.Exceptions;
 import de.carne.util.Late;
 import de.carne.util.SystemProperties;
+import de.carne.util.function.FunctionException;
 import de.carne.util.logging.Log;
 
 /**
@@ -98,7 +107,7 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 		try {
 			this.secretsStore = SecretsStore.create(config);
 			this.configStore = ConfigStore.create(config);
-			this.serviceStore = ServiceStore.create(this, config);
+			this.serviceStore = ServiceStore.create(this.secretsStore, this, config);
 		} catch (IOException | GeneralSecurityException e) {
 			throw new ServiceManagerException(e, "Failed to open required store");
 		}
@@ -117,7 +126,8 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 	 */
 	public synchronized Thread start(boolean foreground) throws ServiceManagerException, InterruptedException {
 		if (this.state != ServiceManagerState.CONFIGURED) {
-			throw new ServiceManagerException("Master server has already been started (status: ''{0}''", this.state);
+			throw new ServiceManagerException(
+					ReasonMessage.illegalState("Master server has already been started (status: ''{0}'')", this.state));
 		}
 
 		Thread thread;
@@ -135,9 +145,11 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 
 			this.serviceStore.autoStartServices();
 			thread = this.serverThreadHolder.set(Thread.currentThread());
+			logUsedMemory();
 			while (processRequest()) {
 				sleep();
 			}
+			logUsedMemory();
 		} else {
 			thread = new Thread(() -> {
 				try {
@@ -146,10 +158,12 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 					throw Exceptions.toRuntime(e);
 				}
 			}, toString());
+			thread.setDaemon(true);
+			thread.setUncaughtExceptionHandler(this::uncaughtExceptionHandler);
 			thread.start();
 			do {
 				wait(WAIT_TIMEOUT);
-			} while (this.state != ServiceManagerState.RUNNING);
+			} while (this.state == ServiceManagerState.CONFIGURED);
 		}
 		return thread;
 	}
@@ -162,6 +176,44 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 	 */
 	public Thread getServerThread() {
 		return this.serverThreadHolder.get();
+	}
+
+	/**
+	 * Receives and registers a {@linkplain Service} module file.
+	 *
+	 * @param fileStream the file stream to receive.
+	 * @param fileName the file name of {@linkplain Service} module.
+	 * @param force whether to force unloading and overwriting of an already running {@linkplain Service} module with
+	 *        the same name.
+	 * @return the updated {@linkplain Service} module status.
+	 * @throws ServiceManagerException if an error occurs while registering the {@linkplain Service} module.
+	 */
+	public ModuleInfo receiveAndRegisterModule(InputStream fileStream, String fileName, boolean force)
+			throws ServiceManagerException {
+		LOG.info("Receiving module file ''{0}''...", fileName);
+
+		Path tempReceiveDir = null;
+		ModuleInfo status;
+
+		try {
+			tempReceiveDir = Files.createTempDirectory("receive");
+
+			Path file = tempReceiveDir.resolve(fileName);
+
+			IOUtil.copyStream(file.toFile(), fileStream);
+			status = registerModule(file, force);
+		} catch (IOException e) {
+			throw new ServiceManagerException(e, "Failed to receive file ''{0}''", fileName);
+		} finally {
+			if (tempReceiveDir != null) {
+				try {
+					FileUtil.delete(tempReceiveDir);
+				} catch (IOException e) {
+					LOG.warning(e, "Failed to delete temporary directory ''{0}''", tempReceiveDir);
+				}
+			}
+		}
+		return status;
 	}
 
 	@Override
@@ -178,48 +230,61 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 	}
 
 	@Override
-	public String registerModule(String file, boolean overwrite) throws ServiceManagerException {
-		// TODO Auto-generated method stub
-		return "";
+	public ModuleInfo registerModule(Path file, boolean force) throws ServiceManagerException {
+		ModuleInfo status = this.serviceStore.registerModule(file, force);
+
+		logUsedMemory();
+		this.serviceStore.syncStore();
+		return status;
 	}
 
 	@Override
-	public void loadModule(String moduleName) throws ServiceManagerException {
-		// TODO Auto-generated method stub
+	public ModuleInfo loadModule(String moduleName) throws ServiceManagerException {
+		ModuleInfo status = this.serviceStore.loadModule(moduleName);
+
+		logUsedMemory();
 		this.serviceStore.syncStore();
+		return status;
 	}
 
 	@Override
 	public void deleteModule(String moduleName) throws ServiceManagerException {
-		// TODO Auto-generated method stub
+		this.serviceStore.deleteModule(moduleName);
+		logUsedMemory();
 		this.serviceStore.syncStore();
 	}
 
 	@Override
-	public ServiceId registerService(String className) throws ServiceManagerException {
+	public ServiceInfo registerService(String className) throws ServiceManagerException {
 		ServiceId serviceId = new ServiceId(ServiceStore.RUNTIME_MODULE_NAME, className);
+		ServiceInfo status = this.serviceStore.registerService(serviceId, false);
 
-		this.serviceStore.registerService(serviceId, false);
+		logUsedMemory();
 		this.serviceStore.syncStore();
-		return serviceId;
+		return status;
 	}
 
 	@Override
-	public void startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException {
-		this.serviceStore.startService(serviceId, autoStart);
+	public ServiceInfo startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException {
+		ServiceInfo status = this.serviceStore.startService(serviceId, autoStart);
+
 		this.serviceStore.syncStore();
+		logUsedMemory();
+		return status;
 	}
 
 	@Override
-	public void stopService(ServiceId serviceId) throws ServiceManagerException {
-		this.serviceStore.stopService(serviceId, false);
+	public ServiceInfo stopService(ServiceId serviceId) throws ServiceManagerException {
+		ServiceInfo status = this.serviceStore.stopService(serviceId, false);
+
+		logUsedMemory();
+		return status;
 	}
 
 	@Override
 	public void addHttpHandler(HttpHandler httpHandler, HttpHandlerRegistration... mapping)
 			throws ServiceManagerException {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -247,23 +312,47 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 		this.serviceStore.close();
 	}
 
-	private synchronized void stop() throws ServiceManagerException {
-		LOG.info("Stopping master server...");
-
-		this.serviceStore.unloadAllServices();
-		this.state = ServiceManagerState.STOPPED;
-		notifyAll();
-		try {
-			this.httpServerHolder.get().shutdown(WAIT_TIMEOUT, TimeUnit.MILLISECONDS).get();
-		} catch (ExecutionException | InterruptedException e) {
-			throw new ServiceManagerException(e, "HTTP server shutdown failed");
-		}
-		LOG.notice("Master server has been stopped");
-	}
-
 	@Override
 	public String toString() {
 		return "Master server " + this.configStore.getBaseUri();
+	}
+
+	private void uncaughtExceptionHandler(Thread thread, Throwable exception) {
+		LOG.error(exception, "Server failed with uncaught exception: {0}", exception.getClass().getName());
+
+		try {
+			stop();
+		} catch (ServiceManagerException e) {
+			exception.addSuppressed(e);
+		}
+
+		UncaughtExceptionHandler defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+
+		if (defaultUncaughtExceptionHandler != null) {
+			defaultUncaughtExceptionHandler.uncaughtException(thread, exception);
+		}
+	}
+
+	private synchronized void stop() throws ServiceManagerException {
+		LOG.info("Stopping master server...");
+
+		this.serviceStore.safeUnloadAllServices();
+		this.state = ServiceManagerState.STOPPED;
+		notifyAll();
+		try {
+			this.httpServerHolder.toOptional().ifPresent(httpServer -> {
+				try {
+					httpServer.shutdown(WAIT_TIMEOUT, TimeUnit.MILLISECONDS).get();
+				} catch (ExecutionException | InterruptedException e) {
+					throw new FunctionException(e);
+				}
+			});
+		} catch (FunctionException e) {
+			throw new ServiceManagerException(e.getCause(), "HTTP server shutdown failed");
+		}
+		logUsedMemory();
+
+		LOG.notice("Master server has been stopped");
 	}
 
 	private synchronized boolean processRequest() throws ServiceManagerException {
@@ -300,6 +389,10 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 
 			ResourceConfig controlResourceConfig = new ResourceConfig(ControlApiService.class)
 					.addProperties(controlResourceConfigProperties);
+
+			controlResourceConfig.register(JacksonFeature.class).packages(MultiPartFeature.class.getPackageName())
+					.register(MultiPartFeature.class).register(ControlApiExceptionMapper.class);
+
 			URI baseUri = this.configStore.getBaseUri();
 			SSLEngineConfigurator sslEngineConfigurator;
 			boolean secure;
@@ -363,6 +456,12 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 
 	private static long getLongDefault(String propertyKey, long defaultValue) {
 		return SystemProperties.longValue(Server.class.getName() + propertyKey, defaultValue);
+	}
+
+	private static void logUsedMemory() {
+		if (LOG.isDebugLoggable()) {
+			LOG.debug("Used memory {0}", Debug.formatUsedMemory());
+		}
 	}
 
 }

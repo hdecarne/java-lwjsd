@@ -18,6 +18,8 @@ package de.carne.lwjsd.api;
 
 import java.text.MessageFormat;
 
+import de.carne.util.Exceptions;
+
 /**
  * This exception indicates an error during {@linkplain ServiceManager} operation.
  */
@@ -25,6 +27,8 @@ public class ServiceManagerException extends Exception {
 
 	// Serialization support
 	private static final long serialVersionUID = 6402976037028357984L;
+
+	private final ReasonMessage reasonMessage;
 
 	/**
 	 * Constructs {@linkplain ServiceManagerException}.
@@ -34,7 +38,8 @@ public class ServiceManagerException extends Exception {
 	 * @see MessageFormat
 	 */
 	public ServiceManagerException(String pattern, Object... arguments) {
-		super(MessageFormat.format(pattern, arguments));
+		super(arguments.length > 0 ? MessageFormat.format(pattern, arguments) : pattern);
+		this.reasonMessage = new ReasonMessage(ReasonMessage.Reason.GENERAL_FAILURE, getMessage());
 	}
 
 	/**
@@ -44,6 +49,7 @@ public class ServiceManagerException extends Exception {
 	 */
 	public ServiceManagerException(Throwable cause) {
 		super(cause);
+		this.reasonMessage = new ReasonMessage(ReasonMessage.Reason.GENERAL_FAILURE, Exceptions.toString(cause));
 	}
 
 	/**
@@ -55,7 +61,38 @@ public class ServiceManagerException extends Exception {
 	 * @see MessageFormat
 	 */
 	public ServiceManagerException(Throwable cause, String pattern, Object... arguments) {
-		super(MessageFormat.format(pattern, arguments), cause);
+		super((arguments.length > 0 ? MessageFormat.format(pattern, arguments) : pattern), cause);
+		this.reasonMessage = new ReasonMessage(ReasonMessage.Reason.GENERAL_FAILURE, getMessage());
+	}
+
+	/**
+	 * Constructs {@linkplain ServiceManagerException}.
+	 *
+	 * @param reasonMessage the exception reason.
+	 */
+	public ServiceManagerException(ReasonMessage reasonMessage) {
+		super(reasonMessage.message());
+		this.reasonMessage = reasonMessage;
+	}
+
+	/**
+	 * Constructs {@linkplain ServiceManagerException}.
+	 *
+	 * @param cause the causing exception.
+	 * @param reasonMessage the exception reason.
+	 */
+	public ServiceManagerException(Throwable cause, ReasonMessage reasonMessage) {
+		super(reasonMessage.message(), cause);
+		this.reasonMessage = reasonMessage;
+	}
+
+	/**
+	 * Gets the {@linkplain ReasonMessage} attached to this instance.
+	 *
+	 * @return the {@linkplain ReasonMessage} attached to this instance.
+	 */
+	public ReasonMessage getReasonMessage() {
+		return this.reasonMessage;
 	}
 
 }

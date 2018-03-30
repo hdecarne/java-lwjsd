@@ -28,12 +28,22 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import javax.ws.rs.ProcessingException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.glassfish.jersey.client.proxy.WebResourceFactory;
 import org.glassfish.jersey.jackson.JacksonFeature;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 
+import de.carne.check.Nullable;
+import de.carne.lwjsd.api.ModuleInfo;
+import de.carne.lwjsd.api.ReasonMessage;
 import de.carne.lwjsd.api.ServiceId;
+import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceManager;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.api.ServiceManagerInfo;
@@ -43,7 +53,10 @@ import de.carne.lwjsd.runtime.security.CharSecret;
 import de.carne.lwjsd.runtime.security.Passwords;
 import de.carne.lwjsd.runtime.security.SecretsStore;
 import de.carne.lwjsd.runtime.ws.ControlApi;
-import de.carne.lwjsd.runtime.ws.JsonServiceId;
+import de.carne.lwjsd.runtime.ws.ControlApiExceptionMapper;
+import de.carne.lwjsd.runtime.ws.JsonModuleInfo;
+import de.carne.lwjsd.runtime.ws.JsonReasonMessage;
+import de.carne.lwjsd.runtime.ws.RegisterModuleMultiPartHandler;
 import de.carne.util.Debug;
 import de.carne.util.Late;
 import de.carne.util.ManifestInfos;
@@ -89,12 +102,12 @@ public final class Client implements ServiceManager, AutoCloseable {
 		LOG.info("Connecting to server at ''{0}''...", baseUri);
 		LOG.debug("Using {0}", this.configStore);
 
-		ClientBuilder clientBuilder = ClientBuilder.newBuilder();
+		ClientBuilder clientBuilder = ClientBuilder.newBuilder().register(JacksonFeature.class)
+				.register(MultiPartFeature.class);
 
 		if ("https".equals(baseUri.getScheme())) {
 			clientBuilder.sslContext(setupSslContext());
 		}
-		clientBuilder.register(JacksonFeature.class);
 
 		javax.ws.rs.client.Client controlApiClient = this.controlApiClientHolder.set(clientBuilder.build());
 
@@ -148,9 +161,9 @@ public final class Client implements ServiceManager, AutoCloseable {
 		String version;
 
 		try {
-			version = this.controlApiHolder.get().version();
-		} catch (ProcessingException e) {
-			throw mapProcessingException(e);
+			version = this.controlApiHolder.get().getVersion();
+		} catch (Exception e) {
+			throw mapControlApiException(e);
 		}
 		return version;
 	}
@@ -161,8 +174,8 @@ public final class Client implements ServiceManager, AutoCloseable {
 
 		try {
 			serviceManagerInfo = this.controlApiHolder.get().queryStatus().toSource();
-		} catch (ProcessingException e) {
-			throw mapProcessingException(e);
+		} catch (Exception e) {
+			throw mapControlApiException(e);
 		}
 		return serviceManagerInfo;
 	}
@@ -173,57 +186,85 @@ public final class Client implements ServiceManager, AutoCloseable {
 	}
 
 	@Override
-	public String registerModule(String file, boolean overwrite) throws ServiceManagerException {
-		// TODO Auto-generated method stub
-		return "";
+	public ModuleInfo registerModule(Path file, boolean force) throws ServiceManagerException {
+		ModuleInfo status;
+
+		try (FormDataMultiPart multiPart = new FormDataMultiPart()) {
+			RegisterModuleMultiPartHandler.fromSource(multiPart, file, force);
+
+			// The proxy client is not yet capable of handling multi-part params correctly.
+			// Therefore we have to perform this call manually.
+			String basePath = ControlApi.class.getAnnotation(javax.ws.rs.Path.class).value();
+			Response response = this.controlApiClientHolder.get().target(this.configStore.getBaseUri()).path(basePath)
+					.path("registerModule").request(MediaType.APPLICATION_JSON_TYPE)
+					.post(Entity.entity(multiPart, multiPart.getMediaType()));
+
+			status = processResponseStatus(response).readEntity(JsonModuleInfo.class).toSource();
+		} catch (IOException e) {
+			throw new ServiceManagerException(e, "Failed to access file ''{0}''", file);
+		} catch (ProcessingException e) {
+			throw mapControlApiException(e);
+		}
+		return status;
 	}
 
 	@Override
-	public void loadModule(String moduleName) throws ServiceManagerException {
+	public ModuleInfo loadModule(String moduleName) throws ServiceManagerException {
+		ModuleInfo status;
+
 		try {
-			this.controlApiHolder.get().loadModule(moduleName);
-		} catch (ProcessingException e) {
-			throw mapProcessingException(e);
+			status = this.controlApiHolder.get().loadModule(moduleName).toSource();
+		} catch (Exception e) {
+			throw mapControlApiException(e);
 		}
+		return status;
 	}
 
 	@Override
 	public void deleteModule(String moduleName) throws ServiceManagerException {
 		try {
 			this.controlApiHolder.get().deleteModule(moduleName);
-		} catch (ProcessingException e) {
-			throw mapProcessingException(e);
+		} catch (Exception e) {
+			throw mapControlApiException(e);
 		}
 	}
 
 	@Override
-	public ServiceId registerService(String className) throws ServiceManagerException {
-		ServiceId serviceId;
+	public ServiceInfo registerService(String className) throws ServiceManagerException {
+		ServiceInfo status;
 
 		try {
-			serviceId = this.controlApiHolder.get().registerService(className).toSource();
-		} catch (ProcessingException e) {
-			throw mapProcessingException(e);
+			status = this.controlApiHolder.get().registerService(className).toSource();
+		} catch (Exception e) {
+			throw mapControlApiException(e);
 		}
-		return serviceId;
+		return status;
 	}
 
 	@Override
-	public void startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException {
+	public ServiceInfo startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException {
+		ServiceInfo status;
+
 		try {
-			this.controlApiHolder.get().startService(new JsonServiceId(serviceId), autoStart);
-		} catch (ProcessingException e) {
-			throw mapProcessingException(e);
+			status = this.controlApiHolder.get()
+					.startService(serviceId.moduleName(), serviceId.serviceName(), autoStart).toSource();
+		} catch (Exception e) {
+			throw mapControlApiException(e);
 		}
+		return status;
 	}
 
 	@Override
-	public void stopService(ServiceId serviceId) throws ServiceManagerException {
+	public ServiceInfo stopService(ServiceId serviceId) throws ServiceManagerException {
+		ServiceInfo status;
+
 		try {
-			this.controlApiHolder.get().stopService(new JsonServiceId(serviceId));
-		} catch (ProcessingException e) {
-			throw mapProcessingException(e);
+			status = this.controlApiHolder.get().stopService(serviceId.moduleName(), serviceId.serviceName())
+					.toSource();
+		} catch (Exception e) {
+			throw mapControlApiException(e);
 		}
+		return status;
 	}
 
 	@Override
@@ -237,11 +278,44 @@ public final class Client implements ServiceManager, AutoCloseable {
 		LOG.notice("Connection to server ''{0}'' has been closed", this.configStore.getBaseUri());
 	}
 
-	private ServiceManagerException mapProcessingException(ProcessingException e) {
-		String restCall = Debug.getCaller();
+	private Response processResponseStatus(Response response) throws ServiceManagerException {
+		if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+			throw mapFailedResponse(Debug.getCaller(), response);
+		}
+		return response;
+	}
+
+	private ServiceManagerException mapControlApiException(Exception exception) {
+		ServiceManagerException serviceManagerException;
+		String caller = Debug.getCaller();
+
+		if (exception instanceof WebApplicationException) {
+			serviceManagerException = mapFailedResponse(caller, ((WebApplicationException) exception).getResponse());
+		} else {
+			serviceManagerException = restCallFailure(caller, exception);
+		}
+		return serviceManagerException;
+	}
+
+	private ServiceManagerException mapFailedResponse(String caller, Response response) {
+		ServiceManagerException serviceManagerException;
+
+		if (Boolean.parseBoolean(response.getHeaderString(ControlApiExceptionMapper.CONTROL_API_EXCEPTION_HEADER))) {
+			ReasonMessage reasonMessage = response.readEntity(JsonReasonMessage.class).toSource();
+
+			serviceManagerException = new ServiceManagerException(reasonMessage);
+		} else {
+			serviceManagerException = restCallFailure(caller, null);
+		}
+		return serviceManagerException;
+	}
+
+	private ServiceManagerException restCallFailure(String caller, @Nullable Throwable exception) {
+		String messagePattern = "REST call {0} to master server ''{1}'' failed";
 		URI baseUri = this.configStore.getBaseUri();
 
-		return new ServiceManagerException(e, "REST call {0} to master server ''{1}'' failed", restCall, baseUri);
+		return (exception != null ? new ServiceManagerException(exception, messagePattern, caller, baseUri)
+				: new ServiceManagerException(messagePattern, caller, baseUri));
 	}
 
 }

@@ -19,6 +19,7 @@ package de.carne.lwjsd.api.test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import de.carne.lwjsd.api.ReasonMessage;
 import de.carne.lwjsd.api.ServiceManagerException;
 
 /**
@@ -28,13 +29,21 @@ class ServiceManagerExceptionTest {
 
 	@Test
 	void testServiceManagerException() {
-		Assertions.assertEquals(getClass().getName(), new ServiceManagerException(getClass().getName()).getMessage());
+		final String exceptionMessage = getClass().getName();
+
+		Assertions.assertEquals(exceptionMessage, new ServiceManagerException(exceptionMessage).getMessage());
 
 		Throwable cause = new IllegalStateException();
 
 		Assertions.assertEquals(cause.getClass().getName(), new ServiceManagerException(cause).getMessage());
-		Assertions.assertEquals(getClass().getName(),
-				new ServiceManagerException(cause, getClass().getName()).getMessage());
+		Assertions.assertEquals(exceptionMessage, new ServiceManagerException(cause, exceptionMessage).getMessage());
+
+		ReasonMessage reasonMessage = new ReasonMessage(ReasonMessage.Reason.ILLEGAL_STATE, exceptionMessage);
+
+		Assertions.assertEquals(reasonMessage.toString(),
+				new ServiceManagerException(reasonMessage).getReasonMessage().toString());
+		Assertions.assertEquals(reasonMessage.toString(),
+				new ServiceManagerException(cause, reasonMessage).getReasonMessage().toString());
 	}
 
 }

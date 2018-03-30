@@ -92,7 +92,7 @@ public class LwjsdMain implements ApplicationMain {
 				throw Check.fail();
 			}
 		} catch (Exception e) {
-			LOG.error(e, "Command ''{0}'' failed with exception: {1}", bootCmdLine, Exceptions.toString(e));
+			LOG.error(e, "Command ''{0}'' failed with exception: {1}", bootCmdLine, e.getClass().getName());
 			status = -1;
 		} finally {
 			Logs.flush();

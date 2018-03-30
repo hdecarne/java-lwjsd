@@ -16,6 +16,8 @@
  */
 package de.carne.lwjsd.api;
 
+import java.nio.file.Path;
+
 /**
  * This interface provides the necessary functions for managing the {@linkplain Service} execution environment.
  */
@@ -39,20 +41,22 @@ public interface ServiceManager {
 	/**
 	 * Registers a new {@linkplain Service} module into this {@linkplain ServiceManager}.
 	 *
-	 * @param file the file name of the {@linkplain Service} module to register.
-	 * @param overwrite whether to overwrite an already registered {@linkplain Service} module with the same name.
-	 * @return the registered module name.
-	 * @throws ServiceManagerException if an error occurs while installing the {@linkplain Service} module.
+	 * @param file the {@linkplain Service} module file to register.
+	 * @param force whether to force unloading and overwriting of an already running {@linkplain Service} module with
+	 *        the same name.
+	 * @return the updated {@linkplain Service} module status.
+	 * @throws ServiceManagerException if an error occurs while registering the {@linkplain Service} module.
 	 */
-	String registerModule(String file, boolean overwrite) throws ServiceManagerException;
+	ModuleInfo registerModule(Path file, boolean force) throws ServiceManagerException;
 
 	/**
 	 * Loads an already registered {@linkplain Service} module and registers the provided {@linkplain Service}s.
 	 *
 	 * @param moduleName the name of the {@linkplain Service} module to load.
+	 * @return the updated {@linkplain Service} module status.
 	 * @throws ServiceManagerException if an error occurs while loading the {@linkplain Service} module.
 	 */
-	void loadModule(String moduleName) throws ServiceManagerException;
+	ModuleInfo loadModule(String moduleName) throws ServiceManagerException;
 
 	/**
 	 * Deletes an already registered {@linkplain Service} module.
@@ -66,26 +70,28 @@ public interface ServiceManager {
 	 * Registers a {@linkplain Service} provided by the current runtime environment.
 	 *
 	 * @param className the name of the class providing the {@linkplain Service}.
-	 * @return the registered service id.
+	 * @return the updated {@linkplain Service} status.
 	 * @throws ServiceManagerException if an error occurs while registering the {@linkplain Service}.
 	 */
-	ServiceId registerService(String className) throws ServiceManagerException;
+	ServiceInfo registerService(String className) throws ServiceManagerException;
 
 	/**
 	 * Starts a {@linkplain Service}.
 	 *
 	 * @param serviceId the id of the {@linkplain Service} to start.
 	 * @param autoStart whether to always start the {@linkplain Service} on server start.
+	 * @return the updated {@linkplain Service} status.
 	 * @throws ServiceManagerException if an error occurs while starting the {@linkplain Service}.
 	 */
-	void startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException;
+	ServiceInfo startService(ServiceId serviceId, boolean autoStart) throws ServiceManagerException;
 
 	/**
 	 * Stops a {@linkplain Service}.
 	 *
 	 * @param serviceId the id of the {@linkplain Service} to stop.
+	 * @return the updated {@linkplain Service} status.
 	 * @throws ServiceManagerException if an error occurs while stopping the {@linkplain Service}.
 	 */
-	void stopService(ServiceId serviceId) throws ServiceManagerException;
+	ServiceInfo stopService(ServiceId serviceId) throws ServiceManagerException;
 
 }

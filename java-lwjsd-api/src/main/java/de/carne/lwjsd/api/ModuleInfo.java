@@ -22,16 +22,19 @@ package de.carne.lwjsd.api;
 public final class ModuleInfo {
 
 	private final String name;
+	private final String version;
 	private final ModuleState state;
 
 	/**
 	 * Constructs a new {@linkplain ModuleInfo} instance.
 	 *
 	 * @param name the name of the {@linkplain Service} module.
+	 * @param version the version of the {@linkplain Service} module.
 	 * @param state the current state of the {@linkplain Service} module.
 	 */
-	public ModuleInfo(String name, ModuleState state) {
+	public ModuleInfo(String name, String version, ModuleState state) {
 		this.name = name;
+		this.version = version;
 		this.state = state;
 	}
 
@@ -45,6 +48,15 @@ public final class ModuleInfo {
 	}
 
 	/**
+	 * Gets the version of the {@linkplain Service} module.
+	 *
+	 * @return the version of the {@linkplain Service} module.
+	 */
+	public String version() {
+		return this.version;
+	}
+
+	/**
 	 * Gets the current state of the {@linkplain Service} module.
 	 *
 	 * @return the current state of the {@linkplain Service} module.
@@ -55,7 +67,7 @@ public final class ModuleInfo {
 
 	@Override
 	public String toString() {
-		return ":" + this.name + " (" + this.state + ")";
+		return ":" + this.name + "-" + this.version + " (" + this.state + ")";
 	}
 
 }

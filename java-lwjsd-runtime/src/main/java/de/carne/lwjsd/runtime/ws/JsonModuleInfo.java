@@ -29,6 +29,8 @@ public final class JsonModuleInfo {
 	@Nullable
 	private String name;
 	@Nullable
+	private String version;
+	@Nullable
 	private ModuleState state;
 
 	/**
@@ -45,6 +47,7 @@ public final class JsonModuleInfo {
 	 */
 	public JsonModuleInfo(ModuleInfo source) {
 		this.name = source.name();
+		this.version = source.version();
 		this.state = source.state();
 	}
 
@@ -64,6 +67,24 @@ public final class JsonModuleInfo {
 	 */
 	public String getName() {
 		return Check.notNull(this.name);
+	}
+
+	/**
+	 * Sets {@code version}.
+	 *
+	 * @param version {@code version} attribute.
+	 */
+	public void setVersion(String version) {
+		this.version = version;
+	}
+
+	/**
+	 * Gets {@code version} attribute.
+	 *
+	 * @return {@code version} attribute.
+	 */
+	public String getVersion() {
+		return Check.notNull(this.version);
 	}
 
 	/**
@@ -90,7 +111,7 @@ public final class JsonModuleInfo {
 	 * @return the transferred source object.
 	 */
 	public ModuleInfo toSource() {
-		return new ModuleInfo(getName(), getState());
+		return new ModuleInfo(getName(), getVersion(), getState());
 	}
 
 }

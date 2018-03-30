@@ -79,7 +79,7 @@ public abstract class Config {
 		buffer.append(" sslProtocol = ").append(getSslProtocol()).append(System.lineSeparator());
 		buffer.append(" confDir = ").append(getConfDir()).append(System.lineSeparator());
 		buffer.append("  sslKeyStoreFile = ").append(getSslKeyStoreFile()).append(System.lineSeparator());
-		buffer.append("  sslKeyStorePass = <secret>").append(System.lineSeparator());
+		buffer.append("  sslKeyStoreSecret = <secret>").append(System.lineSeparator());
 		buffer.append(" stateDir = ").append(getStateDir());
 		return buffer.toString();
 	}

@@ -158,6 +158,32 @@ public final class SecretsStore {
 		return cipher;
 	}
 
+	/**
+	 * Gets the default {@linkplain Signature}.
+	 *
+	 * @return the default {@linkplain Signature}.
+	 * @throws NoSuchAlgorithmException if the requested signature name is not known.
+	 */
+	public Signature getDefaultSignature() throws NoSuchAlgorithmException {
+		return getSignature(DEFAULT_SIGNATURE);
+	}
+
+	/**
+	 * Gets a specific {@linkplain Signature}.
+	 *
+	 * @param name the name of the {@linkplain Signature} to retrieve.
+	 * @return the found {@linkplain Signature}.
+	 * @throws NoSuchAlgorithmException if the requested signature name is not known.
+	 */
+	public Signature getSignature(String name) throws NoSuchAlgorithmException {
+		Signature signature = this.signatureMap.get(name);
+
+		if (signature == null) {
+			throw new NoSuchAlgorithmException("Unknown signature: " + name);
+		}
+		return signature;
+	}
+
 	private static Cipher createDefaultCipher() throws GeneralSecurityException {
 		return CipherFactory.getInstance(DEFAULT_CIPHER).createCipher();
 	}

@@ -17,10 +17,13 @@
 package de.carne.lwjsd.runtime.test.client;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import de.carne.lwjsd.api.ServiceId;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.api.ServiceManagerInfo;
 import de.carne.lwjsd.api.ServiceManagerState;
@@ -28,7 +31,7 @@ import de.carne.lwjsd.runtime.client.Client;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
 import de.carne.lwjsd.runtime.server.Server;
 import de.carne.lwjsd.runtime.test.TestConfig;
-import de.carne.lwjsd.runtime.test.TestService;
+import de.carne.lwjsd.runtime.test.services.TestService;
 
 /**
  * Test {@linkplain Client} class.
@@ -60,6 +63,14 @@ class ClientTest {
 			ServiceManagerInfo status1 = client.queryStatus();
 
 			Assertions.assertEquals(ServiceManagerState.RUNNING, status1.state());
+
+			Assertions.assertThrows(ServiceManagerException.class, () -> {
+				client.startService(new ServiceId("", "unknown"), false);
+			});
+
+			Path testServiceJarPath = Paths.get("build/libs/java-lwjsd-runtime-test-services-0.0.0.jar");
+
+			client.registerModule(testServiceJarPath, false);
 
 			client.requestStop();
 			server.getServerThread().join();

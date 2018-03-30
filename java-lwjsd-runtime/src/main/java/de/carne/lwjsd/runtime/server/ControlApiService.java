@@ -16,14 +16,20 @@
  */
 package de.carne.lwjsd.runtime.server;
 
+import java.io.InputStream;
+
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+
 import de.carne.check.Check;
 import de.carne.check.Nullable;
+import de.carne.lwjsd.api.ServiceId;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.runtime.ws.ControlApi;
-import de.carne.lwjsd.runtime.ws.JsonServiceId;
+import de.carne.lwjsd.runtime.ws.JsonModuleInfo;
+import de.carne.lwjsd.runtime.ws.JsonServiceInfo;
 import de.carne.lwjsd.runtime.ws.JsonServiceManagerInfo;
 import de.carne.util.ManifestInfos;
 
@@ -34,7 +40,7 @@ class ControlApiService implements ControlApi {
 	private Application application;
 
 	@Override
-	public String version() {
+	public String getVersion() {
 		return ManifestInfos.APPLICATION_VERSION;
 	}
 
@@ -49,8 +55,14 @@ class ControlApiService implements ControlApi {
 	}
 
 	@Override
-	public void loadModule(String moduleName) throws ServiceManagerException {
-		getServer().loadModule(moduleName);
+	public JsonModuleInfo registerModule(InputStream fileStream, FormDataContentDisposition fileDetails, boolean force)
+			throws ServiceManagerException {
+		return new JsonModuleInfo(getServer().receiveAndRegisterModule(fileStream, fileDetails.getFileName(), force));
+	}
+
+	@Override
+	public JsonModuleInfo loadModule(String moduleName) throws ServiceManagerException {
+		return new JsonModuleInfo(getServer().loadModule(moduleName));
 	}
 
 	@Override
@@ -59,18 +71,19 @@ class ControlApiService implements ControlApi {
 	}
 
 	@Override
-	public JsonServiceId registerService(String className) throws ServiceManagerException {
-		return new JsonServiceId(getServer().registerService(className));
+	public JsonServiceInfo registerService(String className) throws ServiceManagerException {
+		return new JsonServiceInfo(getServer().registerService(className));
 	}
 
 	@Override
-	public void startService(JsonServiceId serviceId, boolean autoStart) throws ServiceManagerException {
-		getServer().startService(serviceId.toSource(), autoStart);
+	public JsonServiceInfo startService(String moduleName, String serviceName, boolean autoStart)
+			throws ServiceManagerException {
+		return new JsonServiceInfo(getServer().startService(new ServiceId(moduleName, serviceName), autoStart));
 	}
 
 	@Override
-	public void stopService(JsonServiceId serviceId) throws ServiceManagerException {
-		getServer().stopService(serviceId.toSource());
+	public JsonServiceInfo stopService(String moduleName, String serviceName) throws ServiceManagerException {
+		return new JsonServiceInfo(getServer().stopService(new ServiceId(moduleName, serviceName)));
 	}
 
 	private Server getServer() {

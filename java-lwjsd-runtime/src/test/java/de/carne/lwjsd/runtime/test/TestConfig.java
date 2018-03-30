@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import de.carne.io.IOUtil;
 import de.carne.lwjsd.runtime.config.ConfigStore;
@@ -35,6 +36,11 @@ public final class TestConfig {
 	private TestConfig() {
 		// Prevent instantation
 	}
+
+	/**
+	 * Test service module build from package paths **.test.services.**
+	 */
+	public static final Path TEST_SERVICES_MODULE = Paths.get("build/libs/java-lwjsd-runtime-test-services-0.0.0.jar");
 
 	/**
 	 * Prepares a new {@linkplain RuntimeConfig} instance for a test.
