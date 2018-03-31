@@ -99,7 +99,13 @@ class ServerTest {
 			Assertions.assertEquals(3, serviceManagerInfo1.serviceInfos().size());
 
 			// Module deletion
-			server.deleteModule(serviceManagerInfo1.moduleInfos().iterator().next().name());
+			ModuleInfo moduleInfo = serviceManagerInfo1.moduleInfos().iterator().next();
+
+			server.deleteModule(moduleInfo.name());
+
+			Assertions.assertThrows(ServiceManagerException.class, () -> {
+				server.deleteModule(moduleInfo.name());
+			});
 
 			ServiceManagerInfo serviceManagerInfo2 = server.queryStatus();
 

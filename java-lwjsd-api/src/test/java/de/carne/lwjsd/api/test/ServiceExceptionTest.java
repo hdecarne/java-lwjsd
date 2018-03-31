@@ -16,6 +16,8 @@
  */
 package de.carne.lwjsd.api.test;
 
+import java.text.MessageFormat;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -28,12 +30,21 @@ class ServiceExceptionTest {
 
 	@Test
 	void testServiceException() {
-		Assertions.assertEquals(getClass().getName(), new ServiceException(getClass().getName()).getMessage());
-
+		String exceptionMessageWithArgs = "Cause: ''{0}''";
 		Throwable cause = new IllegalStateException();
+		String exceptionMessageWithoutArgs = MessageFormat.format(exceptionMessageWithArgs, cause);
+
+		Assertions.assertEquals(exceptionMessageWithoutArgs,
+				new ServiceException(exceptionMessageWithArgs, cause).getMessage());
+		Assertions.assertEquals(exceptionMessageWithoutArgs,
+				new ServiceException(exceptionMessageWithoutArgs).getMessage());
 
 		Assertions.assertEquals(cause.getClass().getName(), new ServiceException(cause).getMessage());
-		Assertions.assertEquals(getClass().getName(), new ServiceException(cause, getClass().getName()).getMessage());
+
+		Assertions.assertEquals(exceptionMessageWithoutArgs,
+				new ServiceException(cause, exceptionMessageWithArgs, cause).getMessage());
+		Assertions.assertEquals(exceptionMessageWithoutArgs,
+				new ServiceException(cause, exceptionMessageWithoutArgs).getMessage());
 	}
 
 }

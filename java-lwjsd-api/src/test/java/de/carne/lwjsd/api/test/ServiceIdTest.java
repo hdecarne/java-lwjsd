@@ -29,7 +29,11 @@ import de.carne.lwjsd.api.ServiceId;
  */
 class ServiceIdTest {
 
-	class TestService implements Service {
+	private class TestService1 implements Service {
+
+		public TestService1() {
+			// Nothing to do
+		}
 
 		@Override
 		public void load(ServiceContext context) throws ServiceException {
@@ -53,18 +57,34 @@ class ServiceIdTest {
 
 	}
 
+	private class TestService2 extends TestService1 {
+
+		public TestService2() {
+			// Nothing to do
+		}
+
+	}
+
 	@Test
 	void testServiceId() {
-		ServiceId serviceId1 = new ServiceId("moduleName", new TestService());
+		ServiceId serviceId1 = new ServiceId("moduleName1", new TestService1());
 
-		Assertions.assertEquals("moduleName", serviceId1.moduleName());
-		Assertions.assertEquals(TestService.class.getName(), serviceId1.serviceName());
+		Assertions.assertEquals("moduleName1", serviceId1.moduleName());
+		Assertions.assertEquals(TestService1.class.getName(), serviceId1.serviceName());
 
 		ServiceId serviceId2 = new ServiceId(serviceId1.moduleName(), serviceId1.serviceName());
 
-		Assertions.assertEquals(serviceId1, serviceId2);
 		Assertions.assertNotEquals(serviceId1, this);
+		Assertions.assertEquals(serviceId1, serviceId2);
 		Assertions.assertEquals(serviceId1.hashCode(), serviceId2.hashCode());
+
+		ServiceId serviceId3 = new ServiceId("moduleName2", serviceId1.serviceName());
+
+		Assertions.assertNotEquals(serviceId1, serviceId3);
+
+		ServiceId serviceId4 = new ServiceId("moduleName2", new TestService2());
+
+		Assertions.assertNotEquals(serviceId3, serviceId4);
 	}
 
 }

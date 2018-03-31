@@ -16,6 +16,8 @@
  */
 package de.carne.lwjsd.api.test;
 
+import java.text.MessageFormat;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -29,16 +31,23 @@ class ServiceManagerExceptionTest {
 
 	@Test
 	void testServiceManagerException() {
-		final String exceptionMessage = getClass().getName();
-
-		Assertions.assertEquals(exceptionMessage, new ServiceManagerException(exceptionMessage).getMessage());
-
+		String exceptionMessageWithArgs = "Cause: ''{0}''";
 		Throwable cause = new IllegalStateException();
+		String exceptionMessageWithoutArgs = MessageFormat.format(exceptionMessageWithArgs, cause);
+
+		Assertions.assertEquals(exceptionMessageWithoutArgs,
+				new ServiceManagerException(exceptionMessageWithArgs, cause).getMessage());
+		Assertions.assertEquals(exceptionMessageWithoutArgs,
+				new ServiceManagerException(exceptionMessageWithoutArgs).getMessage());
 
 		Assertions.assertEquals(cause.getClass().getName(), new ServiceManagerException(cause).getMessage());
-		Assertions.assertEquals(exceptionMessage, new ServiceManagerException(cause, exceptionMessage).getMessage());
+		Assertions.assertEquals(exceptionMessageWithoutArgs,
+				new ServiceManagerException(cause, exceptionMessageWithArgs, cause).getMessage());
+		Assertions.assertEquals(exceptionMessageWithoutArgs,
+				new ServiceManagerException(cause, exceptionMessageWithoutArgs).getMessage());
 
-		ReasonMessage reasonMessage = new ReasonMessage(ReasonMessage.Reason.ILLEGAL_STATE, exceptionMessage);
+		ReasonMessage reasonMessage = new ReasonMessage(ReasonMessage.Reason.ILLEGAL_STATE, exceptionMessageWithArgs,
+				cause);
 
 		Assertions.assertEquals(reasonMessage.toString(),
 				new ServiceManagerException(reasonMessage).getReasonMessage().toString());

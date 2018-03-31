@@ -154,6 +154,7 @@ public interface ControlApi {
 	@POST
 	@Path("stopService")
 	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
 	JsonServiceInfo stopService(@QueryParam(value = "moduleName") String moduleName,
 			@QueryParam(value = "serviceName") String serviceName) throws ServiceManagerException;
 

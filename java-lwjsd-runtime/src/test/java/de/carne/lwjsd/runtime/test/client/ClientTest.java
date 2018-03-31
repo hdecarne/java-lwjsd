@@ -17,16 +17,17 @@
 package de.carne.lwjsd.runtime.test.client;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import de.carne.lwjsd.api.ModuleInfo;
 import de.carne.lwjsd.api.ServiceId;
+import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.api.ServiceManagerInfo;
 import de.carne.lwjsd.api.ServiceManagerState;
+import de.carne.lwjsd.api.ServiceState;
 import de.carne.lwjsd.runtime.client.Client;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
 import de.carne.lwjsd.runtime.server.Server;
@@ -56,28 +57,62 @@ class ClientTest {
 		RuntimeConfig config = TestConfig.prepareConfig();
 
 		try (Server server = new Server(config); Client client = new Client(config)) {
-			server.registerService(TestService.class.getName());
+			// Server start & connect
 			server.start(false);
 			client.connect();
 
+			// Server status
 			ServiceManagerInfo status1 = client.queryStatus();
 
 			Assertions.assertEquals(ServiceManagerState.RUNNING, status1.state());
+			Assertions.assertEquals(0, status1.moduleInfos().size());
+			Assertions.assertEquals(1, status1.serviceInfos().size());
 
+			// Module management
+			client.registerModule(TestConfig.TEST_SERVICES_MODULE, false);
+
+			ServiceManagerInfo status2 = client.queryStatus();
+
+			Assertions.assertEquals(1, status2.moduleInfos().size());
+			Assertions.assertEquals(2, status2.serviceInfos().size());
+
+			Assertions.assertThrows(ServiceManagerException.class, () -> {
+				client.registerModule(TestConfig.TEST_SERVICES_MODULE, false);
+			});
+			client.registerModule(TestConfig.TEST_SERVICES_MODULE, true);
+
+			ServiceManagerInfo status3 = client.queryStatus();
+
+			Assertions.assertEquals(1, status3.moduleInfos().size());
+			Assertions.assertEquals(2, status3.serviceInfos().size());
+
+			ModuleInfo moduleInfo = status3.moduleInfos().iterator().next();
+
+			client.deleteModule(moduleInfo.name());
+
+			ServiceManagerInfo status4 = client.queryStatus();
+
+			Assertions.assertEquals(0, status4.moduleInfos().size());
+			Assertions.assertEquals(1, status4.serviceInfos().size());
+
+			// Service management
 			Assertions.assertThrows(ServiceManagerException.class, () -> {
 				client.startService(new ServiceId("", "unknown"), false);
 			});
 
-			Path testServiceJarPath = Paths.get("build/libs/java-lwjsd-runtime-test-services-0.0.0.jar");
+			ServiceInfo serviceInfo1 = client.registerService(TestService.class.getName());
 
-			client.registerModule(testServiceJarPath, false);
+			Assertions.assertEquals(ServiceState.REGISTERED, serviceInfo1.state());
+			Assertions.assertEquals(ServiceState.RUNNING, client.startService(serviceInfo1.id(), false).state());
+			Assertions.assertEquals(ServiceState.LOADED, client.stopService(serviceInfo1.id()).state());
 
+			// Server stop
 			client.requestStop();
 			server.getServerThread().join();
 
-			ServiceManagerInfo status2 = server.queryStatus();
+			ServiceManagerInfo status6 = server.queryStatus();
 
-			Assertions.assertEquals(ServiceManagerState.STOPPED, status2.state());
+			Assertions.assertEquals(ServiceManagerState.STOPPED, status6.state());
 		} finally {
 			TestConfig.discardConfig(config);
 		}
