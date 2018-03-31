@@ -20,6 +20,7 @@ package de.carne.lwjsd.runtime.security;
  * Base class for objects that represent some kind of security key and are managed via a {@linkplain SecretsProvider}
  * instance.
  */
+@SuppressWarnings("squid:S1610")
 public abstract class Secret implements AutoCloseable {
 
 	/**
