@@ -284,13 +284,12 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 	@Override
 	public void addHttpHandler(HttpHandler httpHandler, HttpHandlerRegistration... mapping)
 			throws ServiceManagerException {
-		// TODO Auto-generated method stub
+		this.httpServerHolder.get().getServerConfiguration().addHttpHandler(httpHandler, mapping);
 	}
 
 	@Override
 	public void removeHttpHandler(HttpHandler httpHandler) throws ServiceManagerException {
-		// TODO Auto-generated method stub
-
+		this.httpServerHolder.get().getServerConfiguration().removeHttpHandler(httpHandler);
 	}
 
 	@Override
