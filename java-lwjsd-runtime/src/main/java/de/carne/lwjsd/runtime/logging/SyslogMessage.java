@@ -32,139 +32,182 @@ import java.util.Locale;
 public final class SyslogMessage {
 
 	/**
-	 * Severity: Emergency: system is unusable
+	 * Message severity.
 	 */
-	public static final int SEV_EMERG = 0;
+	public enum Severity {
+
+		/**
+		 * Severity: Emergency: system is unusable
+		 */
+		SEV_EMERG(0),
+
+		/**
+		 * Severity: Alert: action must be taken immediately
+		 */
+		SEV_ALERT(1),
+
+		/**
+		 * Severity: Critical: critical conditions
+		 */
+		SEV_CRIT(2),
+
+		/**
+		 * Severity: Error: error conditions
+		 */
+		SEV_ERR(3),
+
+		/**
+		 * Severity: Warning: warning conditions
+		 */
+		SEV_WARNING(4),
+
+		/**
+		 * Severity: Notice: normal but significant condition
+		 */
+		SEV_NOTICE(5),
+
+		/**
+		 * Severity: Informational: informational messages
+		 */
+		SEV_INFO(6),
+
+		/**
+		 * Severity: Debug: debug-level messages
+		 */
+		SEV_DEBUG(7);
+
+		private final int sev;
+
+		private Severity(int sev) {
+			this.sev = sev;
+		}
+
+		/**
+		 * Gets the {@code int} value of this {@linkplain Severity}.
+		 *
+		 * @return the {@code int} value of this {@linkplain Severity}.
+		 */
+		public int sev() {
+			return this.sev;
+		}
+
+	}
 
 	/**
-	 * Severity: Alert: action must be taken immediately
+	 * Message facility.
 	 */
-	public static final int SEV_ALERT = 1;
+	public enum Facility {
+		/**
+		 * Facility: kernel messages
+		 */
+		FAC_KERN(0),
 
-	/**
-	 * Severity: Critical: critical conditions
-	 */
-	public static final int SEV_CRIT = 2;
+		/**
+		 * Facility: user-level messages
+		 */
+		FAC_USER(1),
 
-	/**
-	 * Severity: Error: error conditions
-	 */
-	public static final int SEV_ERR = 3;
+		/**
+		 * Facility: mail system
+		 */
+		FAC_MAIL(2),
 
-	/**
-	 * Severity: Warning: warning conditions
-	 */
-	public static final int SEV_WARNING = 4;
+		/**
+		 * Facility: system daemons
+		 */
+		FAC_DAEMON(3),
 
-	/**
-	 * Severity: Notice: normal but significant condition
-	 */
-	public static final int SEV_NOTICE = 5;
+		/**
+		 * Facility: security/authorization messages
+		 */
+		FAC_AUTH(4),
 
-	/**
-	 * Severity: Informational: informational messages
-	 */
-	public static final int SEV_INFO = 6;
+		/**
+		 * Facility: messages generated internally by syslogd
+		 */
+		FAC_SYSLOG(5),
 
-	/**
-	 * Severity: Debug: debug-level messages
-	 */
-	public static final int SEV_DEBUG = 7;
+		/**
+		 * Facility: line printer subsystem
+		 */
+		FAC_LPR(6),
 
-	/**
-	 * Facility: kernel messages
-	 */
-	public static final int FAC_KERN = 0;
+		/**
+		 * Facility: network news subsystem
+		 */
+		FAC_NEWS(7),
 
-	/**
-	 * Facility: user-level messages
-	 */
-	public static final int FAC_USER = 1;
+		/**
+		 * Facility: UUCP subsystem
+		 */
+		FAC_UUCP(8),
 
-	/**
-	 * Facility: mail system
-	 */
-	public static final int FAC_MAIL = 2;
+		/**
+		 * Facility: clock daemon
+		 */
+		FAC_CRON(9),
 
-	/**
-	 * Facility: system daemons
-	 */
-	public static final int FAC_DAEMON = 3;
+		/**
+		 * Facility: security/authorization messages
+		 */
+		FAC_AUTHPRIV(10),
 
-	/**
-	 * Facility: security/authorization messages
-	 */
-	public static final int FAC_AUTH = 4;
+		/**
+		 * Facility: local use 0
+		 */
+		FAC_LOCAL0(16),
 
-	/**
-	 * Facility: messages generated internally by syslogd
-	 */
-	public static final int FAC_SYSLOG = 5;
+		/**
+		 * Facility: local use 1
+		 */
+		FAC_LOCAL1(17),
 
-	/**
-	 * Facility: line printer subsystem
-	 */
-	public static final int FAC_LPR = 6;
+		/**
+		 * Facility: local use 2
+		 */
+		FAC_LOCAL2(18),
 
-	/**
-	 * Facility: network news subsystem
-	 */
-	public static final int FAC_NEWS = 7;
+		/**
+		 * Facility: local use 3
+		 */
+		FAC_LOCAL3(19),
 
-	/**
-	 * Facility: UUCP subsystem
-	 */
-	public static final int FAC_UUCP = 8;
+		/**
+		 * Facility: local use 4
+		 */
+		FAC_LOCAL4(20),
 
-	/**
-	 * Facility: clock daemon
-	 */
-	public static final int FAC_CRON = 9;
+		/**
+		 * Facility: local use 5
+		 */
+		FAC_LOCAL5(21),
 
-	/**
-	 * Facility: security/authorization messages
-	 */
-	public static final int FAC_AUTHPRIV = 10;
+		/**
+		 * Facility: local use 6
+		 */
+		FAC_LOCAL6(22),
 
-	/**
-	 * Facility: local use 0
-	 */
-	public static final int FAC_LOCAL0 = 16;
+		/**
+		 * Facility: local use 7
+		 */
+		FAC_LOCAL7(23);
 
-	/**
-	 * Facility: local use 1
-	 */
-	public static final int FAC_LOCAL1 = 17;
+		private final int fac;
 
-	/**
-	 * Facility: local use 2
-	 */
-	public static final int FAC_LOCAL2 = 18;
+		private Facility(int fac) {
+			this.fac = fac;
+		}
 
-	/**
-	 * Facility: local use 3
-	 */
-	public static final int FAC_LOCAL3 = 19;
+		/**
+		 * Gets the {@code int} value of this {@linkplain Facility}.
+		 *
+		 * @return the {@code int} value of this {@linkplain Facility}.
+		 */
+		public int fac() {
+			return this.fac;
+		}
 
-	/**
-	 * Facility: local use 4
-	 */
-	public static final int FAC_LOCAL4 = 20;
-
-	/**
-	 * Facility: local use 5
-	 */
-	public static final int FAC_LOCAL5 = 21;
-
-	/**
-	 * Facility: local use 6
-	 */
-	public static final int FAC_LOCAL6 = 22;
-
-	/**
-	 * Facility: local use 7
-	 */
-	public static final int FAC_LOCAL7 = 23;
+	}
 
 	/**
 	 * Field NIL value.
@@ -183,13 +226,13 @@ public final class SyslogMessage {
 	/**
 	 * Construct {@linkplain SyslogMessage}.
 	 *
-	 * @param sev The message severity (see SEV_ constants).
-	 * @param fac The message facility (see FAC_ constants).
+	 * @param severity the message {@linkplain Severity}.
+	 * @param facility The message {@linkplain Facility}.
 	 * @param timestamp The message timestamp.
 	 * @param msg The message text.
 	 */
-	public SyslogMessage(int sev, int fac, Instant timestamp, String msg) {
-		this.pri = (sev & 0x7) | ((fac & 0x7f) << 3);
+	public SyslogMessage(Severity severity, Facility facility, Instant timestamp, String msg) {
+		this.pri = (severity.sev() & 0x7) | ((facility.fac() & 0x7f) << 3);
 		this.timestamp = timestamp;
 		this.msg = msg;
 	}

@@ -10,10 +10,10 @@ def snapshotBuild = project.version.endsWith("-SNAPSHOT")
 
 def resolveProperty(propertyName, envName) {
 	def resolved = (project.findProperty(propertyName) ?: System.getenv(envName));
-	
+
 	if(resolved == null) {
 		throw new GradleException("Missing property/environment variable: '${propertyName}'/'${envName}")
-	} 
+	}
 	return resolved; 
 }
 

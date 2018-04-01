@@ -17,8 +17,7 @@
 package de.carne.lwjsd.runtime.test.logging;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.logging.LogRecord;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -27,80 +26,53 @@ import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
 import de.carne.lwjsd.runtime.logging.SyslogConfig;
-import de.carne.lwjsd.runtime.logging.SyslogOption;
+import de.carne.lwjsd.runtime.logging.SyslogDestination;
+import de.carne.lwjsd.runtime.logging.SyslogHandler;
 import de.carne.lwjsd.runtime.logging.SyslogProtocol;
 import de.carne.lwjsd.runtime.server.Server;
 import de.carne.lwjsd.runtime.test.TestConfig;
+import de.carne.util.logging.LogLevel;
 
 /**
- * Test Syslog related classes.
+ * Test Syslog sending.
  */
 class SyslogTest {
 
 	@Test
-	void testSyslogConfig() {
-		SyslogConfig config1 = new SyslogConfig("localhost").addOption(SyslogOption.TRANSPORT_TCP);
-		SyslogConfig config2 = new SyslogConfig("localhost", 1234);
-		SyslogConfig config3 = new SyslogConfig("localhost", 4321).addOption(SyslogOption.TRANSPORT_TCP_TLS);
+	void testSyslogHandler() throws IOException, ServiceManagerException, InterruptedException {
+		RuntimeConfig serverConfig = TestConfig.prepareConfig();
 
-		Assertions.assertEquals("tcp://localhost:514", config1.toString());
-		Assertions.assertEquals("udp://localhost:1234", config2.toString());
-		Assertions.assertEquals("tcp+tls://localhost:4321", config3.toString());
-
-		Assertions.assertEquals("localhost", config2.host());
-		Assertions.assertEquals(1234, config2.port());
-
-		Assertions.assertEquals(SyslogProtocol.RFC3164, config2.getProtocol());
-
-		config2.setProtocol(SyslogProtocol.RFC5424);
-
-		Assertions.assertEquals(SyslogProtocol.RFC5424, config2.getProtocol());
-
-		Assertions.assertEquals(new HashSet<>(Arrays.asList()), config2.getOptions());
-		Assertions.assertFalse(config2.hasOption(SyslogOption.TRANSPORT_TCP));
-
-		config2.addOption(SyslogOption.TRANSPORT_TCP);
-
-		Assertions.assertTrue(config2.hasOption(SyslogOption.TRANSPORT_TCP));
-
-		config2.addOption(SyslogOption.TRANSPORT_TCP);
-
-		Assertions.assertTrue(config2.hasOption(SyslogOption.TRANSPORT_TCP));
-		Assertions.assertFalse(config2.hasOption(SyslogOption.TRANSPORT_TCP_TLS));
-
-		config2.addOption(SyslogOption.TRANSPORT_TCP_TLS);
-
-		Assertions.assertTrue(config2.hasOption(SyslogOption.TRANSPORT_TCP_TLS));
-		Assertions.assertEquals(
-				new HashSet<>(Arrays.asList(SyslogOption.TRANSPORT_TCP, SyslogOption.TRANSPORT_TCP_TLS)),
-				config2.getOptions());
-
-		config2.removeOption(SyslogOption.TRANSPORT_TCP_TLS);
-
-		Assertions.assertFalse(config2.hasOption(SyslogOption.TRANSPORT_TCP_TLS));
-		Assertions.assertEquals(new HashSet<>(Arrays.asList(SyslogOption.TRANSPORT_TCP)), config2.getOptions());
-
-		config2.setDefaultMessageHost("thishost");
-
-		Assertions.assertEquals("thishost", config2.getDefaultMessageHost());
-		config2.setDefaultMessageApp("lwjsd");
-
-		Assertions.assertEquals("lwjsd", config2.getDefaultMessageApp());
-	}
-
-	@Test
-	void testSyslogDestination() throws IOException, ServiceManagerException, InterruptedException {
-		RuntimeConfig config = TestConfig.prepareConfig();
-
-		try (Server server = new Server(config)) {
+		try (Server server = new Server(serverConfig)) {
 			Thread serverThread = server.start(false);
-			ServiceInfo syslogServiceInfo = server.registerService(SyslogReceiverService.class.getName());
+			ServiceInfo serviceInfo = server.registerService(UdpSyslogReceiverService.class.getName());
 
-			server.startService(syslogServiceInfo.id(), false);
+			server.startService(serviceInfo.id(), false);
+
+			SyslogReceiver receiver = server.getService(UdpSyslogReceiverService.class);
+			SyslogConfig rfc3164Config = new SyslogConfig(UdpSyslogReceiverService.HOST, UdpSyslogReceiverService.PORT);
+
+			testSyslogHandlerConfig(receiver, rfc3164Config);
+
+			SyslogConfig rfc54244Config = new SyslogConfig(UdpSyslogReceiverService.HOST, UdpSyslogReceiverService.PORT)
+					.setProtocol(SyslogProtocol.RFC5424);
+
+			testSyslogHandlerConfig(receiver, rfc54244Config);
 			server.requestStop();
 			serverThread.join();
 		} finally {
-			TestConfig.discardConfig(config);
+			TestConfig.discardConfig(serverConfig);
+		}
+	}
+
+	private void testSyslogHandlerConfig(SyslogReceiver receiver, SyslogConfig config) throws InterruptedException {
+		try (SyslogDestination destination = new SyslogDestination(config)) {
+			SyslogHandler handler = new SyslogHandler(destination);
+			String message = "Syslog message " + System.nanoTime();
+			LogRecord logRecord = new LogRecord(LogLevel.LEVEL_NOTICE, message);
+
+			handler.publish(logRecord);
+
+			Assertions.assertEquals(message, receiver.pollMessage(config));
 		}
 	}
 

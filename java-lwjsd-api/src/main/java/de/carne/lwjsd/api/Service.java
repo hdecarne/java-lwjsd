@@ -30,7 +30,9 @@ public interface Service {
 	 * @param context the {@linkplain ServiceContext} interface providing access to the execution environment.
 	 * @throws ServiceException if an error occurs while loading the {@linkplain Service}.
 	 */
-	void load(ServiceContext context) throws ServiceException;
+	default void load(ServiceContext context) throws ServiceException {
+		// default is to do nothing
+	}
 
 	/**
 	 * Acquires any necessary resource for {@linkplain Service} execution and starts the {@linkplain Service}.
@@ -54,6 +56,8 @@ public interface Service {
 	 * @param context the {@linkplain ServiceContext} interface providing access to the execution environment.
 	 * @throws ServiceException if an error occurs while unloading the {@linkplain Service}.
 	 */
-	void unload(ServiceContext context) throws ServiceException;
+	default void unload(ServiceContext context) throws ServiceException {
+		// default is to do nothing
+	}
 
 }
