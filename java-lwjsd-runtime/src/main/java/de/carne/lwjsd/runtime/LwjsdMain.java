@@ -28,15 +28,10 @@ import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.runtime.client.Client;
 import de.carne.lwjsd.runtime.config.Defaults;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
-import de.carne.lwjsd.runtime.logging.SyslogConfig;
-import de.carne.lwjsd.runtime.logging.SyslogDestination;
-import de.carne.lwjsd.runtime.logging.SyslogHandler;
-import de.carne.lwjsd.runtime.logging.SyslogProtocol;
 import de.carne.lwjsd.runtime.server.Server;
 import de.carne.util.Exceptions;
 import de.carne.util.cmdline.CmdLineProcessor;
 import de.carne.util.logging.Log;
-import de.carne.util.logging.LogBuffer;
 import de.carne.util.logging.Logs;
 
 /**
@@ -127,12 +122,6 @@ public class LwjsdMain implements ApplicationMain {
 	}
 
 	private int runServerCommand() throws InterruptedException, ServiceManagerException {
-		SyslogConfig syslogConfig = new SyslogConfig("homefs1.holger.mobi").setProtocol(SyslogProtocol.RFC3164)
-				.setDefaultMessageApp(NAME);
-		SyslogDestination syslog = new SyslogDestination(syslogConfig);
-		SyslogHandler syslogHandler = new SyslogHandler(syslog);
-
-		LogBuffer.addHandler(LOG, syslogHandler, false);
 		try (Server server = new Server(this.config)) {
 			server.start(true);
 		}

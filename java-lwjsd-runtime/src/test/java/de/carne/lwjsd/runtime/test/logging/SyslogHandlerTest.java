@@ -17,6 +17,7 @@
 package de.carne.lwjsd.runtime.test.logging;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.logging.LogRecord;
 
 import org.junit.jupiter.api.Assertions;
@@ -28,34 +29,46 @@ import de.carne.lwjsd.runtime.config.RuntimeConfig;
 import de.carne.lwjsd.runtime.logging.SyslogConfig;
 import de.carne.lwjsd.runtime.logging.SyslogDestination;
 import de.carne.lwjsd.runtime.logging.SyslogHandler;
+import de.carne.lwjsd.runtime.logging.SyslogOption;
 import de.carne.lwjsd.runtime.logging.SyslogProtocol;
 import de.carne.lwjsd.runtime.server.Server;
 import de.carne.lwjsd.runtime.test.TestConfig;
 import de.carne.util.logging.LogLevel;
 
 /**
- * Test Syslog sending.
+ * Test {@linkplain SyslogHandler} class.
  */
-class SyslogTest {
+class SyslogHandlerTest {
 
 	@Test
-	void testSyslogHandler() throws IOException, ServiceManagerException, InterruptedException {
+	void testUdpSyslogHandler() throws IOException, ServiceManagerException, InterruptedException {
+		testSyslogHandler(UdpSyslogReceiverService.class);
+		testSyslogHandler(TcpSyslogReceiverService.class, SyslogOption.TRANSPORT_TCP);
+		testSyslogHandler(TcpSyslogReceiverService.class, SyslogOption.TRANSPORT_TCP,
+				SyslogOption.OCTET_COUNTING_FRAMING);
+	}
+
+	private void testSyslogHandler(Class<? extends SyslogReceiver> receiverClass, SyslogOption... options)
+			throws IOException, ServiceManagerException, InterruptedException {
 		RuntimeConfig serverConfig = TestConfig.prepareConfig();
 
 		try (Server server = new Server(serverConfig)) {
 			Thread serverThread = server.start(false);
-			ServiceInfo serviceInfo = server.registerService(UdpSyslogReceiverService.class.getName());
+			ServiceInfo serviceInfo = server.registerService(receiverClass.getName());
 
 			server.startService(serviceInfo.id(), false);
 
-			SyslogReceiver receiver = server.getService(UdpSyslogReceiverService.class);
+			SyslogReceiver receiver = server.getService(receiverClass);
+
 			SyslogConfig rfc3164Config = new SyslogConfig(UdpSyslogReceiverService.HOST, UdpSyslogReceiverService.PORT);
 
+			Arrays.stream(options).forEach(rfc3164Config::addOption);
 			testSyslogHandlerConfig(receiver, rfc3164Config);
 
 			SyslogConfig rfc54244Config = new SyslogConfig(UdpSyslogReceiverService.HOST, UdpSyslogReceiverService.PORT)
 					.setProtocol(SyslogProtocol.RFC5424);
 
+			Arrays.stream(options).forEach(rfc54244Config::addOption);
 			testSyslogHandlerConfig(receiver, rfc54244Config);
 			server.requestStop();
 			serverThread.join();

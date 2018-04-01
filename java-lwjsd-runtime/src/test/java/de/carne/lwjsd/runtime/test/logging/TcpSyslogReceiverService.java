@@ -20,8 +20,8 @@ import java.io.IOException;
 
 import org.glassfish.grizzly.filterchain.FilterChainBuilder;
 import org.glassfish.grizzly.filterchain.TransportFilter;
-import org.glassfish.grizzly.nio.transport.UDPNIOTransport;
-import org.glassfish.grizzly.nio.transport.UDPNIOTransportBuilder;
+import org.glassfish.grizzly.nio.transport.TCPNIOTransport;
+import org.glassfish.grizzly.nio.transport.TCPNIOTransportBuilder;
 
 import de.carne.lwjsd.api.ServiceContext;
 import de.carne.lwjsd.api.ServiceException;
@@ -29,27 +29,27 @@ import de.carne.lwjsd.runtime.logging.SyslogConfig;
 import de.carne.util.Late;
 
 /**
- * UDP based {@linkplain SyslogReceiver}
+ * TCP based {@linkplain SyslogReceiver}
  */
-public class UdpSyslogReceiverService extends SyslogReceiver {
+public class TcpSyslogReceiverService extends SyslogReceiver {
 
 	/**
-	 * UDP listen host
+	 * TCP listen host
 	 */
 	public static final String HOST = "localhost";
 
 	/**
-	 * UDP listen port
+	 * TCP listen port
 	 */
 	public static final int PORT = 1000 + SyslogConfig.DEFAULT_PORT;
 
-	private final Late<UDPNIOTransport> transportHolder = new Late<>();
+	private final Late<TCPNIOTransport> transportHolder = new Late<>();
 
 	@Override
 	public void start(ServiceContext context) throws ServiceException {
-		UDPNIOTransportBuilder transportBuilder = UDPNIOTransportBuilder.newInstance();
+		TCPNIOTransportBuilder transportBuilder = TCPNIOTransportBuilder.newInstance();
 
-		UDPNIOTransport transport = this.transportHolder.set(transportBuilder.build());
+		TCPNIOTransport transport = this.transportHolder.set(transportBuilder.build());
 
 		transport.setProcessor(buildChain(FilterChainBuilder.stateless().add(new TransportFilter())));
 		try {

@@ -35,9 +35,11 @@ import org.glassfish.grizzly.nio.transport.UDPNIOConnection;
 
 import de.carne.check.Check;
 import de.carne.check.Nullable;
+import de.carne.lwjsd.api.Service;
 import de.carne.lwjsd.runtime.logging.SyslogConfig;
+import de.carne.util.Exceptions;
 
-abstract class SyslogReceiver {
+abstract class SyslogReceiver implements Service {
 
 	private static final int TIMEOUT = 1000;
 
@@ -50,7 +52,7 @@ abstract class SyslogReceiver {
 
 	@Nullable
 	public String pollMessage(SyslogConfig config) throws InterruptedException {
-		String message = this.messages.poll(TIMEOUT, TimeUnit.MINUTES);
+		String message = this.messages.poll(TIMEOUT, TimeUnit.MILLISECONDS);
 		Matcher matcher;
 
 		switch (config.getProtocol()) {
@@ -83,11 +85,35 @@ abstract class SyslogReceiver {
 		String message = buffer.toStringContent(StandardCharsets.US_ASCII);
 
 		this.messages.offer(message);
-		return ctx.getStopAction();
+		return ctx.getInvokeAction();
 	}
 
 	private NextAction handleTcpRead(FilterChainContext ctx) {
-		return ctx.getStopAction();
+		Buffer buffer = ctx.getMessage();
+		String message = buffer.toStringContent(StandardCharsets.US_ASCII);
+		int startIndex = message.indexOf('<');
+		NextAction nextAction = ctx.getStopAction();
+
+		if (startIndex == 0) {
+			if ("\n\0".indexOf(message.charAt(message.length() - 1)) >= 0) {
+				this.messages.offer(message.substring(0, message.length() - 1));
+				nextAction = ctx.getInvokeAction();
+			}
+		} else if (startIndex > 1 && message.charAt(startIndex - 1) == ' ') {
+			int messageLength;
+
+			try {
+				messageLength = Integer.parseInt(message.substring(0, startIndex - 1));
+				if (startIndex + messageLength == buffer.limit()) {
+					this.messages.offer(message.substring(startIndex));
+					nextAction = ctx.getInvokeAction();
+				}
+			} catch (NumberFormatException e) {
+				Exceptions.ignore(e);
+				nextAction = ctx.getInvokeAction();
+			}
+		}
+		return nextAction;
 	}
 
 	private class SyslogFilter extends BaseFilter {
