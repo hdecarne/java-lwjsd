@@ -221,6 +221,7 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 		Collection<ModuleInfo> moduleInfos = this.serviceStore.queryModuleStatus();
 		Collection<ServiceInfo> serviceInfos = this.serviceStore.queryServiceStatus();
 
+		logUsedMemory();
 		return new ServiceManagerInfo(this.configStore.getBaseUri(), this.state, moduleInfos, serviceInfos);
 	}
 
@@ -233,8 +234,8 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 	public ModuleInfo registerModule(Path file, boolean force) throws ServiceManagerException {
 		ModuleInfo status = this.serviceStore.registerModule(file, force);
 
-		logUsedMemory();
 		this.serviceStore.syncStore();
+		logUsedMemory();
 		return status;
 	}
 
@@ -242,16 +243,16 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 	public ModuleInfo loadModule(String moduleName) throws ServiceManagerException {
 		ModuleInfo status = this.serviceStore.loadModule(moduleName);
 
-		logUsedMemory();
 		this.serviceStore.syncStore();
+		logUsedMemory();
 		return status;
 	}
 
 	@Override
 	public void deleteModule(String moduleName) throws ServiceManagerException {
 		this.serviceStore.deleteModule(moduleName);
-		logUsedMemory();
 		this.serviceStore.syncStore();
+		logUsedMemory();
 	}
 
 	@Override
@@ -259,8 +260,8 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 		ServiceId serviceId = new ServiceId(ServiceStore.RUNTIME_MODULE_NAME, className);
 		ServiceInfo status = this.serviceStore.registerService(serviceId, false);
 
-		logUsedMemory();
 		this.serviceStore.syncStore();
+		logUsedMemory();
 		return status;
 	}
 

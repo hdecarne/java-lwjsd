@@ -21,15 +21,21 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 
 import de.carne.boot.ApplicationMain;
 import de.carne.check.Check;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.runtime.client.Client;
+import de.carne.lwjsd.runtime.client.ClientAction;
+import de.carne.lwjsd.runtime.client.RequestStopAction;
+import de.carne.lwjsd.runtime.client.StatusAction;
 import de.carne.lwjsd.runtime.config.Defaults;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
 import de.carne.lwjsd.runtime.server.Server;
 import de.carne.util.Exceptions;
+import de.carne.util.cmdline.CmdLineException;
 import de.carne.util.cmdline.CmdLineProcessor;
 import de.carne.util.logging.Log;
 import de.carne.util.logging.Logs;
@@ -40,6 +46,8 @@ import de.carne.util.logging.Logs;
 public class LwjsdMain implements ApplicationMain {
 
 	private enum Command {
+
+		NONE,
 
 		HELP,
 
@@ -57,7 +65,8 @@ public class LwjsdMain implements ApplicationMain {
 
 	private static final String NAME = "lwjsd";
 
-	private Command command = Command.HELP;
+	private Command command = Command.NONE;
+	private List<ClientAction> clientActions = new ArrayList<>();
 	private final RuntimeConfig config = new RuntimeConfig(Defaults.get());
 
 	@Override
@@ -79,6 +88,7 @@ public class LwjsdMain implements ApplicationMain {
 
 			commandCmdLine.process();
 			switch (this.command) {
+			case NONE:
 			case HELP:
 				status = runHelpCommand();
 				break;
@@ -91,6 +101,10 @@ public class LwjsdMain implements ApplicationMain {
 			default:
 				throw Check.fail();
 			}
+		} catch (CmdLineException e) {
+			LOG.debug(e, "Processing of command line ''{0}'' failed", bootCmdLine);
+			LOG.error(e.getLocalizedMessage());
+			status = 1;
 		} catch (Exception e) {
 			LOG.error(e, "Command ''{0}'' failed with exception: {1}", bootCmdLine, e.getClass().getName());
 			status = -1;
@@ -113,12 +127,20 @@ public class LwjsdMain implements ApplicationMain {
 		return 0;
 	}
 
+	@SuppressWarnings("squid:S106")
 	private int runClientCommand() throws ServiceManagerException {
+		int status = -1;
+
 		try (Client client = new Client(this.config)) {
 			client.connect();
-			client.requestStop();
+			if (this.clientActions.isEmpty()) {
+				this.clientActions.add(new StatusAction(System.out));
+			}
+			for (ClientAction clientAction : this.clientActions) {
+				status = clientAction.invoke(client);
+			}
 		}
-		return 0;
+		return status;
 	}
 
 	private int runServerCommand() throws InterruptedException, ServiceManagerException {
@@ -153,12 +175,15 @@ public class LwjsdMain implements ApplicationMain {
 		cmdLine.onSwitch(CmdLineProcessor::ignore).arg("--debug");
 		cmdLine.onSwitch(this::setMode).arg("--help").arg("--client").arg("--server");
 		cmdLine.onOption(this::setBaseUri).arg("--baseUri");
-		cmdLine.onUnnamedOption(CmdLineProcessor::ignore);
-		cmdLine.onUnknownArg(CmdLineProcessor::ignore);
+		cmdLine.onSwitch(this::addStatusAction).arg("--status");
+		cmdLine.onSwitch(this::addRequestStopAction).arg("--requestStop");
 		return cmdLine;
 	}
 
 	private void setMode(String arg) {
+		if (this.command != Command.NONE) {
+			throw new IllegalArgumentException("Multiple commands specified");
+		}
 		this.command = Command.valueOf(arg.substring(2).toUpperCase());
 	}
 
@@ -171,6 +196,31 @@ public class LwjsdMain implements ApplicationMain {
 			throw new IllegalArgumentException("Invalid option for argument: " + arg, e);
 		}
 		this.config.setBaseUri(baseUri);
+	}
+
+	@SuppressWarnings("squid:S106")
+	private void addStatusAction(String arg) {
+		validateCommandAction(arg, Command.CLIENT);
+		this.clientActions.add(new StatusAction(System.out));
+	}
+
+	private void addRequestStopAction(String arg) {
+		validateCommandAction(arg, Command.CLIENT);
+		this.clientActions.add(new RequestStopAction());
+	}
+
+	private void validateCommandAction(String arg, Command... validCommands) {
+		boolean validCommandArg = false;
+
+		for (Command validCommand : validCommands) {
+			if (this.command == validCommand) {
+				validCommandArg = true;
+				break;
+			}
+		}
+		if (!validCommandArg) {
+			throw new IllegalArgumentException("Invalid command action " + arg + " for command: " + this.command);
+		}
 	}
 
 }

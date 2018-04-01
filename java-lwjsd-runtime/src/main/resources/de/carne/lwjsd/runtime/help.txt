@@ -1,16 +1,30 @@
 Usage:
-	lwjsd --help
-	lwjsd --client [options] 
-	lwjsd --server [options]
+	lwjsd [general options] --help
+	lwjsd [general options] --client [command options] 
+	lwjsd [general options] --server [command options]
+
+General options:
+	--info
+	Display verbose output.
+	--debug
+	Display debug output.
 
 Commands:
 	--help
 	Shows this help message.
 
-	--client [options]
+	--client [command options]
 	Connects to the server and performs the requested operations.
 
-	--server [options]
+	--server [command options]
 	Starts up the server and waits for client requests.
 
-Options:
+Command options:
+	--baseUri (client, server)
+	Sets the base URI for server access.
+	
+	--requestStop (client)
+	Requests server stop.
+	
+	--status (client)
+	Shows current server status.

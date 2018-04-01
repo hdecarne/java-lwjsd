@@ -158,6 +158,8 @@ public final class Client implements ServiceManager, AutoCloseable {
 	}
 
 	private String version() throws ServiceManagerException {
+		LOG.info("Querying server version: ''{0}''", this.configStore.getBaseUri());
+
 		String version;
 
 		try {
@@ -170,6 +172,8 @@ public final class Client implements ServiceManager, AutoCloseable {
 
 	@Override
 	public ServiceManagerInfo queryStatus() throws ServiceManagerException {
+		LOG.info("Querying server status: ''{0}''", this.configStore.getBaseUri());
+
 		ServiceManagerInfo serviceManagerInfo;
 
 		try {
@@ -182,6 +186,8 @@ public final class Client implements ServiceManager, AutoCloseable {
 
 	@Override
 	public void requestStop() throws ServiceManagerException {
+		LOG.info("Requesting server stop: ''{0}''", this.configStore.getBaseUri());
+
 		this.controlApiHolder.get().requestStop();
 	}
 
