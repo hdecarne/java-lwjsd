@@ -29,7 +29,7 @@ import java.util.Map;
 
 import de.carne.util.Exceptions;
 import de.carne.util.Strings;
-import de.carne.util.logging.Log;
+import de.carne.boot.logging.Log;
 
 /**
  * This class provides access to all necessary configuration data used during client and server execution.

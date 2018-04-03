@@ -21,7 +21,7 @@ import java.security.SecureRandom;
 import javax.security.auth.DestroyFailedException;
 import javax.security.auth.Destroyable;
 
-import de.carne.util.logging.Log;
+import de.carne.boot.logging.Log;
 
 /**
  * Base class for secret providers like {@linkplain Cipher}, {@linkplain Signature}, ... .

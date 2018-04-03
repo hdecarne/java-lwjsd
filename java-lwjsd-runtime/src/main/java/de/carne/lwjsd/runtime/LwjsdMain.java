@@ -37,8 +37,8 @@ import de.carne.lwjsd.runtime.server.Server;
 import de.carne.util.Exceptions;
 import de.carne.util.cmdline.CmdLineException;
 import de.carne.util.cmdline.CmdLineProcessor;
-import de.carne.util.logging.Log;
-import de.carne.util.logging.Logs;
+import de.carne.boot.logging.Log;
+import de.carne.boot.logging.Logs;
 
 /**
  * Application entry point (for all commands).

@@ -60,7 +60,7 @@ import de.carne.lwjsd.runtime.ws.RegisterModuleMultiPartHandler;
 import de.carne.util.Debug;
 import de.carne.util.Late;
 import de.carne.util.ManifestInfos;
-import de.carne.util.logging.Log;
+import de.carne.boot.logging.Log;
 
 /**
  * The class provides remote access to the master server's {@linkplain ServiceManager} interface.

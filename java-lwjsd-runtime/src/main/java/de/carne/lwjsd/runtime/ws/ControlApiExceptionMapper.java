@@ -23,8 +23,8 @@ import javax.ws.rs.ext.ExceptionMapper;
 import de.carne.check.Nullable;
 import de.carne.lwjsd.api.ReasonMessage;
 import de.carne.lwjsd.api.ServiceManagerException;
-import de.carne.util.logging.Log;
-import de.carne.util.logging.LogLevel;
+import de.carne.boot.logging.Log;
+import de.carne.boot.logging.LogLevel;
 
 /**
  * {@linkplain ExceptionMapper} implementation for making the error details available to the client.

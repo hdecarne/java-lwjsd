@@ -33,7 +33,7 @@ import de.carne.lwjsd.runtime.logging.SyslogOption;
 import de.carne.lwjsd.runtime.logging.SyslogProtocol;
 import de.carne.lwjsd.runtime.server.Server;
 import de.carne.lwjsd.runtime.test.TestConfig;
-import de.carne.util.logging.LogLevel;
+import de.carne.boot.logging.LogLevel;
 
 /**
  * Test {@linkplain SyslogHandler} class.

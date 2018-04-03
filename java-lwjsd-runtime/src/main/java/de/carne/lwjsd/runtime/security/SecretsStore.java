@@ -33,7 +33,7 @@ import de.carne.check.Check;
 import de.carne.check.Nullable;
 import de.carne.lwjsd.runtime.config.Config;
 import de.carne.nio.file.attribute.FileAttributes;
-import de.carne.util.logging.Log;
+import de.carne.boot.logging.Log;
 
 /**
  * This manages a server's secrets used for encryption and decryption of passwords as well for signature creation and

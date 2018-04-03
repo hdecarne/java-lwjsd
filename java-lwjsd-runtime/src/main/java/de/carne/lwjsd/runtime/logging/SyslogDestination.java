@@ -31,7 +31,7 @@ import javax.net.ssl.SSLSocketFactory;
 
 import de.carne.check.Nullable;
 import de.carne.io.Closeables;
-import de.carne.util.logging.Log;
+import de.carne.boot.logging.Log;
 
 /**
  * An instances of this class represents a single Syslog destination to which {@linkplain SyslogMessage}s can be sent.

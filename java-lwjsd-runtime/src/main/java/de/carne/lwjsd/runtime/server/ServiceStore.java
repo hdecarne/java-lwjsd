@@ -19,7 +19,6 @@ package de.carne.lwjsd.runtime.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -39,6 +38,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import de.carne.boot.ApplicationJarClassLoader;
+import de.carne.boot.logging.Log;
 import de.carne.check.Check;
 import de.carne.check.Nullable;
 import de.carne.io.Closeables;
@@ -57,7 +57,6 @@ import de.carne.lwjsd.runtime.security.SecretsStore;
 import de.carne.lwjsd.runtime.security.Signature;
 import de.carne.nio.file.attribute.FileAttributes;
 import de.carne.util.function.FunctionException;
-import de.carne.util.logging.Log;
 
 final class ServiceStore {
 
@@ -511,9 +510,9 @@ final class ServiceStore {
 					}
 				}
 
-				URL moduleUrl = this.modulesDir.resolve(moduleFileName).toUri().toURL();
+				Path moduleFile = this.modulesDir.resolve(moduleFileName);
 
-				loader = new ApplicationJarClassLoader(moduleUrl, this.moduleCache.get(RUNTIME_MODULE_NAME));
+				loader = new ApplicationJarClassLoader(moduleFile.toFile(), this.moduleCache.get(RUNTIME_MODULE_NAME));
 			} catch (IOException | GeneralSecurityException e) {
 				throw new ServiceManagerException(e, "Failed to instantiate module ''{0}''", moduleName);
 			}

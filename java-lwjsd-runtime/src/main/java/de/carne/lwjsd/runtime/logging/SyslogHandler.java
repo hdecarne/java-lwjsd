@@ -26,8 +26,8 @@ import java.util.logging.LogRecord;
 
 import de.carne.check.Nullable;
 import de.carne.io.Closeables;
-import de.carne.util.logging.LogLevel;
-import de.carne.util.logging.Logs;
+import de.carne.boot.logging.LogLevel;
+import de.carne.boot.logging.Logs;
 
 /**
  * {@linkplain Handler} implementation providing Syslog support.

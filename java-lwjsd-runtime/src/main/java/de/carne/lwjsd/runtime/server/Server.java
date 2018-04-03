@@ -68,7 +68,7 @@ import de.carne.util.Exceptions;
 import de.carne.util.Late;
 import de.carne.util.SystemProperties;
 import de.carne.util.function.FunctionException;
-import de.carne.util.logging.Log;
+import de.carne.boot.logging.Log;
 
 /**
  * This class runs the master server and provides the actual {@linkplain ServiceManager} and {@linkplain ServiceContext}
