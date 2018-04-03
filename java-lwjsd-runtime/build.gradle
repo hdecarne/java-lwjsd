@@ -1,29 +1,52 @@
+apply plugin: 'distribution'
+
 dependencies {
 	compile project(":java-lwjsd-api")
 	compile("javax.ws.rs:javax.ws.rs-api:2.1")
-	compile("de.carne.common:java-boot:2.+")
-	compile("org.glassfish.jersey.core:jersey-client:2.+")
-	compile("org.glassfish.jersey.core:jersey-server:2.+")
-	compile("org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.+")
-	compile("org.glassfish.jersey.media:jersey-media-json-jackson:2.+")
-	compile("org.glassfish.jersey.media:jersey-media-multipart:2.+")
-	compile("org.glassfish.jersey.ext:jersey-proxy-client:2.+")
-	runtime("org.glassfish.jersey.inject:jersey-hk2:2.+")
+	compile("org.glassfish.jersey.core:jersey-client:2.26")
+	compile("org.glassfish.jersey.core:jersey-server:2.26")
+	compile("org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.26")
+	compile("org.glassfish.jersey.media:jersey-media-json-jackson:2.26")
+	compile("org.glassfish.jersey.media:jersey-media-multipart:2.26")
+	compile("org.glassfish.jersey.ext:jersey-proxy-client:2.26")
+	runtime("org.glassfish.jersey.inject:jersey-hk2:2.26")
 	runtime("javax.xml.bind:jaxb-api:2.3.0")
 	runtime("javax.activation:activation:1.1.1")
 }
 
+import java.text.SimpleDateFormat
+
 jar {
+	def buildTimestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+	
 	manifest {
 		attributes(
-			"Main-Class": "de.carne.boot.Application",
-			"X-Application-Name": "lwjsd",
+			"X-Application-Name": "lwjsd-runtime",
 			"X-Application-Version": project.version,
-			"X-Application-Build": "???"
+			"X-Application-Build": buildTimestamp
 		)
 	}
+}
+
+task bootJar(type: Jar) {
+	appendix = 'boot'
+	entryCompression = ZipEntryCompression.STORED
+	from jar
 	from configurations.runtime.collect {
-		it.name.matches("(java-boot-.*.jar)|(java-default-.*.jar)|(java-lwjsd-.*.jar)") ? zipTree(it).matching { exclude "META-INF/**" } : it
+		it.name.matches('java-boot-.*.jar') ? zipTree(it) : it
+	}
+	manifest {
+		attributes(
+			'Main-Class': 'de.carne.boot.Application',
+		)
+	}
+}
+
+distributions {
+	main {
+		contents {
+			from bootJar
+		}
 	}
 }
 

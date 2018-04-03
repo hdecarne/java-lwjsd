@@ -2,3 +2,17 @@ dependencies {
 	api("de.carne.common:java-default:8.+")
 	api("org.glassfish.grizzly:grizzly-http-server:2.4.+")
 }
+
+import java.text.SimpleDateFormat
+
+jar {
+	def buildTimestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+	
+	manifest {
+		attributes(
+			"X-Application-Name": "lwjsd-api",
+			"X-Application-Version": project.version,
+			"X-Application-Build": buildTimestamp
+		)
+	}
+}
