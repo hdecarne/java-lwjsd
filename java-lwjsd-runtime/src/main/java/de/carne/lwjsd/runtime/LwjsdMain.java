@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.carne.boot.ApplicationMain;
-import de.carne.check.Check;
+import de.carne.boot.check.Check;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.runtime.client.Client;
 import de.carne.lwjsd.runtime.client.ClientAction;

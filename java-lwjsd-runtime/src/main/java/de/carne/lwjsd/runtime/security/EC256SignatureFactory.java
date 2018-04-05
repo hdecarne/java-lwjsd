@@ -28,7 +28,7 @@ import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
-import de.carne.check.Check;
+import de.carne.boot.check.Check;
 
 /**
  * {@linkplain SignatureFactory} implementation providing EC256 signature.

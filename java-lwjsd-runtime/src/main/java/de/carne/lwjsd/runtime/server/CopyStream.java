@@ -23,7 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-import de.carne.check.Nullable;
+import de.carne.boot.check.Nullable;
 
 class CopyStream extends InputStream {
 

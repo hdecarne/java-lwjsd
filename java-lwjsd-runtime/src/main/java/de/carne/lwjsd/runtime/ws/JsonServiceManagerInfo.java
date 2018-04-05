@@ -20,8 +20,8 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import de.carne.check.Check;
-import de.carne.check.Nullable;
+import de.carne.boot.check.Check;
+import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.ModuleInfo;
 import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceManagerInfo;

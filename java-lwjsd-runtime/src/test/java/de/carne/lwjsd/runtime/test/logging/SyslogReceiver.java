@@ -33,8 +33,8 @@ import org.glassfish.grizzly.filterchain.FilterChainContext;
 import org.glassfish.grizzly.filterchain.NextAction;
 import org.glassfish.grizzly.nio.transport.UDPNIOConnection;
 
-import de.carne.check.Check;
-import de.carne.check.Nullable;
+import de.carne.boot.check.Check;
+import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.Service;
 import de.carne.lwjsd.runtime.logging.SyslogConfig;
 import de.carne.util.Exceptions;

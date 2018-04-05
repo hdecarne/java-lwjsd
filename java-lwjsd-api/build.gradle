@@ -1,12 +1,10 @@
 dependencies {
-	api("de.carne.common:java-default:8.+")
-	api("org.glassfish.grizzly:grizzly-http-server:2.4.+")
+	api("de.carne.common:java-default:8.4.0-SNAPSHOT")
+	api("org.glassfish.grizzly:grizzly-http-server:2.4.3")
 }
 
-import java.text.SimpleDateFormat
-
 jar {
-	def buildTimestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+	def buildTimestamp = new java.text.SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
 	
 	manifest {
 		attributes(

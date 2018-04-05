@@ -16,8 +16,8 @@
  */
 package de.carne.lwjsd.runtime.ws;
 
-import de.carne.check.Check;
-import de.carne.check.Nullable;
+import de.carne.boot.check.Check;
+import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.ReasonMessage;
 
 /**

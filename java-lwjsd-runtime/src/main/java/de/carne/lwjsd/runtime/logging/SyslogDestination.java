@@ -29,7 +29,7 @@ import java.net.SocketAddress;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
-import de.carne.check.Nullable;
+import de.carne.boot.check.Nullable;
 import de.carne.io.Closeables;
 import de.carne.boot.logging.Log;
 

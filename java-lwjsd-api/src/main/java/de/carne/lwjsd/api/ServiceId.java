@@ -18,7 +18,7 @@ package de.carne.lwjsd.api;
 
 import java.util.Objects;
 
-import de.carne.check.Nullable;
+import de.carne.boot.check.Nullable;
 
 /**
  * Unique identifier for a {@linkplain Service} instance.

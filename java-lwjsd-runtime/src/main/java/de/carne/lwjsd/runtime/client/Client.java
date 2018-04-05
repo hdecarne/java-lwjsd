@@ -39,7 +39,7 @@ import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 
-import de.carne.check.Nullable;
+import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.ModuleInfo;
 import de.carne.lwjsd.api.ReasonMessage;
 import de.carne.lwjsd.api.ServiceId;

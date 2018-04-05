@@ -24,7 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 
-import de.carne.check.Nullable;
+import de.carne.boot.check.Nullable;
 import de.carne.io.Closeables;
 import de.carne.boot.logging.LogLevel;
 import de.carne.boot.logging.Logs;

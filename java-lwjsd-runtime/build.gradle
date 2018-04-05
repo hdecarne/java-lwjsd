@@ -14,10 +14,8 @@ dependencies {
 	runtime("javax.activation:activation:1.1.1")
 }
 
-import java.text.SimpleDateFormat
-
 jar {
-	def buildTimestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+	def buildTimestamp = new java.text.SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
 	
 	manifest {
 		attributes(
@@ -48,6 +46,11 @@ distributions {
 			from bootJar
 		}
 	}
+}
+
+tasks.withType(Tar){
+	compression = Compression.GZIP
+	extension = 'tar.gz'
 }
 
 task testServiceJar(type: Jar) {

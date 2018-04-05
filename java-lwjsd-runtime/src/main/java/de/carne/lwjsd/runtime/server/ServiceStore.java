@@ -39,8 +39,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import de.carne.boot.ApplicationJarClassLoader;
 import de.carne.boot.logging.Log;
-import de.carne.check.Check;
-import de.carne.check.Nullable;
+import de.carne.boot.check.Check;
+import de.carne.boot.check.Nullable;
 import de.carne.io.Closeables;
 import de.carne.lwjsd.api.ModuleInfo;
 import de.carne.lwjsd.api.ModuleState;

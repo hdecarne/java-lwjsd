@@ -20,7 +20,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
-import de.carne.check.Nullable;
+import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.ReasonMessage;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.boot.logging.Log;

@@ -17,4 +17,4 @@
 @NonNullByDefault
 package de.carne.lwjsd.runtime.test.server;
 
-import de.carne.check.NonNullByDefault;
+import de.carne.boot.check.NonNullByDefault;
