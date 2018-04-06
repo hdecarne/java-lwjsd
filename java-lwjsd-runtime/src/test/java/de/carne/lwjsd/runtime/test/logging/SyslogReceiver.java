@@ -37,7 +37,7 @@ import de.carne.boot.check.Check;
 import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.Service;
 import de.carne.lwjsd.runtime.logging.SyslogConfig;
-import de.carne.util.Exceptions;
+import de.carne.boot.Exceptions;
 
 abstract class SyslogReceiver implements Service {
 

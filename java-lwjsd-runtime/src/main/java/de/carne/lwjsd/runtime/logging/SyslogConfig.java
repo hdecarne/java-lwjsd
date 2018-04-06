@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import de.carne.util.Exceptions;
+import de.carne.boot.Exceptions;
 
 /**
  * Syslog configuration object

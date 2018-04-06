@@ -1,5 +1,5 @@
 dependencies {
-	api("de.carne.common:java-default:8.4.0-SNAPSHOT")
+	api("de.carne.common:java-default:8.4.0")
 	api("org.glassfish.grizzly:grizzly-http-server:2.4.3")
 }
 

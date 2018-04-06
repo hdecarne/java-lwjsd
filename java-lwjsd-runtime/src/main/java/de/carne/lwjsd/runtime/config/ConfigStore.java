@@ -27,7 +27,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import de.carne.util.Exceptions;
+import de.carne.boot.Exceptions;
 import de.carne.util.Strings;
 import de.carne.boot.logging.Log;
 

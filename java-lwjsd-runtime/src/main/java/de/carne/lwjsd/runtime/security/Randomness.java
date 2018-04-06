@@ -19,7 +19,7 @@ package de.carne.lwjsd.runtime.security;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
-import de.carne.util.Exceptions;
+import de.carne.boot.Exceptions;
 
 final class Randomness {
 

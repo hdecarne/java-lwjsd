@@ -34,7 +34,7 @@ import de.carne.lwjsd.runtime.client.StatusAction;
 import de.carne.lwjsd.runtime.config.Defaults;
 import de.carne.lwjsd.runtime.config.RuntimeConfig;
 import de.carne.lwjsd.runtime.server.Server;
-import de.carne.util.Exceptions;
+import de.carne.boot.Exceptions;
 import de.carne.util.cmdline.CmdLineException;
 import de.carne.util.cmdline.CmdLineProcessor;
 import de.carne.boot.logging.Log;

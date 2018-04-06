@@ -64,7 +64,7 @@ import de.carne.lwjsd.runtime.security.SecretsStore;
 import de.carne.lwjsd.runtime.ws.ControlApiExceptionMapper;
 import de.carne.nio.file.FileUtil;
 import de.carne.util.Debug;
-import de.carne.util.Exceptions;
+import de.carne.boot.Exceptions;
 import de.carne.util.Late;
 import de.carne.util.SystemProperties;
 import de.carne.util.function.FunctionException;

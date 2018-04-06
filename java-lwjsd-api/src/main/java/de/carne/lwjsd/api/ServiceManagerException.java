@@ -18,7 +18,7 @@ package de.carne.lwjsd.api;
 
 import java.text.MessageFormat;
 
-import de.carne.util.Exceptions;
+import de.carne.boot.Exceptions;
 
 /**
  * This exception indicates an error during {@linkplain ServiceManager} operation.
