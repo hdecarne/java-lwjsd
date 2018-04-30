@@ -63,7 +63,7 @@ abstract class SyslogReceiver implements Service {
 			matcher = RFC5424_PATTERN.matcher(message);
 			break;
 		default:
-			throw new IllegalArgumentException("Unknown protocol: " + config.getProtocol());
+			throw Check.unexpected(config.getProtocol());
 		}
 		if (!matcher.matches()) {
 			throw new IllegalStateException("Unexpected " + config.getProtocol() + " message: " + message);

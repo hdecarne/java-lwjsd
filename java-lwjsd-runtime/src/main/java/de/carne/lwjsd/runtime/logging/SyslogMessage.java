@@ -26,6 +26,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+import de.carne.boot.check.Check;
+
 /**
  * Syslog message object that can be sent via a {@linkplain SyslogDestination}.
  */
@@ -308,7 +310,7 @@ public final class SyslogMessage {
 			encodeRfc5424To(out, config);
 			break;
 		default:
-			throw new IllegalArgumentException("Unexpected protocol: " + protocol);
+			throw Check.unexpected(protocol);
 		}
 	}
 

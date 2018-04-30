@@ -99,7 +99,7 @@ public class LwjsdMain implements ApplicationMain {
 				status = runServerCommand();
 				break;
 			default:
-				throw Check.fail();
+				throw Check.unexpected(this.command);
 			}
 		} catch (CmdLineException e) {
 			LOG.debug(e, "Processing of command line ''{0}'' failed", bootCmdLine);
