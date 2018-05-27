@@ -31,12 +31,12 @@ subprojects {
 	targetCompatibility = JavaVersion.VERSION_1_9
 
 	repositories {
-		mavenLocal()
-		jcenter()
-		maven { url "https://oss.jfrog.org/libs-release/" }
 		if(snapshotBuild) {
+			mavenLocal()
 			maven { url "https://oss.jfrog.org/libs-snapshot/" }
 		}
+		jcenter()
+		maven { url "https://oss.jfrog.org/libs-release/" }
 	}
 
 	dependencies {
