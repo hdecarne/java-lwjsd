@@ -82,29 +82,26 @@ subprojects {
 				from components.java
 				artifact sourceJar
 				artifact javadocJar
-				pom.withXml {
-					asNode().children().last() + {
-						resolveStrategy = Closure.DELEGATE_FIRST
-						name project.name
-						description projectDescription
-						url projectUrl
-						licenses {
-							license {
-								name projectLicense
-								url projectLicenseUrl
-								distribution "repo"
-							}
+				pom {
+					name = project.name
+					description = projectDescription
+					url = projectUrl
+					licenses {
+						license {
+							name = projectLicense
+							url = projectLicenseUrl
+							distribution = "repo"
 						}
-						developers {
-							developer {
-								id project.resolveProperty("developerId", "DEVELOPER_ID")
-								name project.resolveProperty("developerName", "DEVELOPER_NAME")
-								email project.resolveProperty("developerEmail", "DEVELOPER_EMAIL")
-							}
+					}
+					developers {
+						developer {
+							id = project.resolveProperty("developerId", "DEVELOPER_ID")
+							name = project.resolveProperty("developerName", "DEVELOPER_NAME")
+							email = project.resolveProperty("developerEmail", "DEVELOPER_EMAIL")
 						}
-						scm {
-							url projectScmUrl
-						}
+					}
+					scm {
+						url = projectScmUrl
 					}
 				}
 			}
