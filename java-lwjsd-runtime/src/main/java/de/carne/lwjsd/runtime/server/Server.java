@@ -45,6 +45,8 @@ import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 
+import de.carne.boot.Exceptions;
+import de.carne.boot.logging.Log;
 import de.carne.io.IOUtil;
 import de.carne.lwjsd.api.ModuleInfo;
 import de.carne.lwjsd.api.ReasonMessage;
@@ -64,11 +66,9 @@ import de.carne.lwjsd.runtime.security.SecretsStore;
 import de.carne.lwjsd.runtime.ws.ControlApiExceptionMapper;
 import de.carne.nio.file.FileUtil;
 import de.carne.util.Debug;
-import de.carne.boot.Exceptions;
 import de.carne.util.Late;
 import de.carne.util.SystemProperties;
 import de.carne.util.function.FunctionException;
-import de.carne.boot.logging.Log;
 
 /**
  * This class runs the master server and provides the actual {@linkplain ServiceManager} and {@linkplain ServiceContext}
@@ -154,7 +154,10 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 			thread = new Thread(() -> {
 				try {
 					start(true);
-				} catch (ServiceManagerException | InterruptedException e) {
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw Exceptions.toRuntime(e);
+				} catch (ServiceManagerException e) {
 					throw Exceptions.toRuntime(e);
 				}
 			}, toString());
@@ -343,7 +346,10 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 			this.httpServerHolder.toOptional().ifPresent(httpServer -> {
 				try {
 					httpServer.shutdown(WAIT_TIMEOUT, TimeUnit.MILLISECONDS).get();
-				} catch (ExecutionException | InterruptedException e) {
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw Exceptions.toRuntime(e);
+				} catch (ExecutionException e) {
 					throw new FunctionException(e);
 				}
 			});

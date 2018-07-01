@@ -21,7 +21,7 @@ import java.security.spec.KeySpec;
 
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -32,9 +32,10 @@ public class AES256CipherFactory extends CipherFactory {
 
 	private static final String KEY_FACTORY_ALG = "PBKDF2WithHmacSHA256";
 	private static final String KEY_ALG = "AES";
-	private static final String CIPHER_ALG = "AES/CBC/PKCS5Padding";
+	private static final String CIPHER_ALG = "AES/GCM/NoPadding";
 	private static final int SALT_LENGTH = 8;
-	private static final int IV_LENGTH = 16;
+	private static final int IV_LENGTH = 12;
+	private static final int GCM_TLEN = 128;
 
 	/**
 	 * Cipher name.
@@ -96,10 +97,10 @@ public class AES256CipherFactory extends CipherFactory {
 
 		getRandom().nextBytes(iv);
 
-		IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+		GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TLEN, iv);
 		javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(CIPHER_ALG);
 
-		cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
+		cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKeySpec, gcmParameterSpec);
 
 		byte[] encryptedData = cipher.doFinal(decrypted);
 		byte[] encrypted = new byte[iv.length + encryptedData.length];
@@ -110,10 +111,10 @@ public class AES256CipherFactory extends CipherFactory {
 	}
 
 	byte[] cipherDecrypt0(SecretKeySpec secretKeySpec, byte[] data) throws GeneralSecurityException {
-		IvParameterSpec ivParameterSpec = new IvParameterSpec(data, 0, IV_LENGTH);
+		GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TLEN, data, 0, IV_LENGTH);
 		javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(CIPHER_ALG);
 
-		cipher.init(javax.crypto.Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
+		cipher.init(javax.crypto.Cipher.DECRYPT_MODE, secretKeySpec, gcmParameterSpec);
 		return cipher.doFinal(data, IV_LENGTH, data.length - IV_LENGTH);
 	}
 
