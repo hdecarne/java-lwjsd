@@ -1,6 +1,6 @@
 dependencies {
-	api("de.carne.common:java-boot:2.4.0")
-	api("de.carne.common:java-default:8.5.1")
+	api("de.carne.common:java-boot:2.5.0")
+	api("de.carne.common:java-default:8.6.0")
 	api("org.glassfish.grizzly:grizzly-http-server:2.4.3")
 }
 

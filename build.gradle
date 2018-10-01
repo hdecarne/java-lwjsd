@@ -27,8 +27,8 @@ subprojects {
 	apply plugin: "com.jfrog.artifactory" 
 	apply plugin: "com.jfrog.bintray"
 
-	sourceCompatibility = JavaVersion.VERSION_1_9
-	targetCompatibility = JavaVersion.VERSION_1_9
+	sourceCompatibility = JavaVersion.VERSION_1_10
+	targetCompatibility = JavaVersion.VERSION_1_10
 
 	repositories {
 		if(snapshotBuild) {
@@ -42,7 +42,6 @@ subprojects {
 	dependencies {
 		testImplementation("org.junit.jupiter:junit-jupiter-api:5.2.0")
 		testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.2.0")
-		testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.2.0")
 	}
 
 	test {
@@ -54,7 +53,7 @@ subprojects {
 	}
 
 	jacoco {
-		toolVersion = "0.8.1"
+		toolVersion = "0.8.2"
 	}
 
 	jacocoTestReport {
