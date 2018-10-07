@@ -33,11 +33,11 @@ import org.glassfish.grizzly.filterchain.FilterChainContext;
 import org.glassfish.grizzly.filterchain.NextAction;
 import org.glassfish.grizzly.nio.transport.UDPNIOConnection;
 
+import de.carne.boot.Exceptions;
 import de.carne.boot.check.Check;
 import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.Service;
 import de.carne.lwjsd.runtime.logging.SyslogConfig;
-import de.carne.boot.Exceptions;
 
 abstract class SyslogReceiver implements Service {
 
@@ -53,6 +53,11 @@ abstract class SyslogReceiver implements Service {
 	@Nullable
 	public String pollMessage(SyslogConfig config) throws InterruptedException {
 		String message = this.messages.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+
+		if (message == null) {
+			throw new IllegalStateException("Unexpected " + config.getProtocol() + " poll timeout");
+		}
+
 		Matcher matcher;
 
 		switch (config.getProtocol()) {
