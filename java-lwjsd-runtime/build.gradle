@@ -1,17 +1,18 @@
-apply plugin: 'distribution'
+apply plugin: "distribution"
 
 dependencies {
+	configurations.runtime.exclude(group: "org.eclipse.jdt", module: "org.eclipse.jdt.annotation")
 	implementation project(":java-lwjsd-api")
-	implementation("javax.ws.rs:javax.ws.rs-api:2.1")
-	implementation("org.glassfish.jersey.core:jersey-client:2.26")
-	implementation("org.glassfish.jersey.core:jersey-server:2.26")
-	implementation("org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.26")
-	implementation("org.glassfish.jersey.media:jersey-media-json-jackson:2.26")
-	implementation("org.glassfish.jersey.media:jersey-media-multipart:2.26")
-	implementation("org.glassfish.jersey.ext:jersey-proxy-client:2.26")
-	runtime("org.glassfish.jersey.inject:jersey-hk2:2.26")
-	runtime("javax.xml.bind:jaxb-api:2.3.0")
-	runtime("javax.activation:activation:1.1.1")
+	implementation(group: "javax.ws.rs", name: "javax.ws.rs-api", version: "2.1")
+	implementation(group: "org.glassfish.jersey.core", name: "jersey-client", version: "2.26")
+	implementation(group: "org.glassfish.jersey.core", name: "jersey-server", version: "2.26")
+	implementation(group: "org.glassfish.jersey.containers", name: "jersey-container-grizzly2-http", version: "2.26")
+	implementation(group: "org.glassfish.jersey.media", name: "jersey-media-json-jackson", version: "2.26")
+	implementation(group: "org.glassfish.jersey.media", name: "jersey-media-multipart", version: "2.26")
+	implementation(group: "org.glassfish.jersey.ext", name: "jersey-proxy-client", version: "2.26")
+	runtime(group: "org.glassfish.jersey.inject", name: "jersey-hk2", version: "2.26")
+	runtime(group: "javax.xml.bind", name: "jaxb-api", version: "2.3.0")
+	runtime(group: "javax.activation", name: "activation", version: "1.1.1")
 }
 
 jar {
@@ -27,15 +28,15 @@ jar {
 }
 
 task bootJar(type: Jar) {
-	appendix = 'boot'
+	appendix = "boot"
 	entryCompression = ZipEntryCompression.STORED
 	from jar
-	from configurations.runtime.collect {
-		it.name.matches('java-boot-.*.jar') ? zipTree(it) : it
+	from configurations.runtimeClasspath.collect {
+		it.name.matches("java-boot-.*.jar") ? zipTree(it) : it
 	}
 	manifest {
 		attributes(
-			'Main-Class': 'de.carne.boot.Application',
+			"Main-Class": "de.carne.boot.Application",
 		)
 	}
 }
@@ -50,7 +51,7 @@ distributions {
 
 tasks.withType(Tar){
 	compression = Compression.GZIP
-	extension = 'tar.gz'
+	extension = "tar.gz"
 }
 
 task testServiceJar(type: Jar) {

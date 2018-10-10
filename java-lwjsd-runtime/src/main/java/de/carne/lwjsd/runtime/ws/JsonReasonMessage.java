@@ -16,8 +16,9 @@
  */
 package de.carne.lwjsd.runtime.ws;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import de.carne.boot.check.Check;
-import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.ReasonMessage;
 
 /**
@@ -25,8 +26,7 @@ import de.carne.lwjsd.api.ReasonMessage;
  */
 public final class JsonReasonMessage {
 
-	@Nullable
-	private ReasonMessage.Reason reason = null;
+	private ReasonMessage.@Nullable Reason reason = null;
 	@Nullable
 	private String message = null;
 

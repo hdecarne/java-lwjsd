@@ -34,13 +34,14 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import de.carne.boot.ApplicationJarClassLoader;
-import de.carne.boot.logging.Log;
 import de.carne.boot.check.Check;
-import de.carne.boot.check.Nullable;
+import de.carne.boot.logging.Log;
 import de.carne.io.Closeables;
 import de.carne.lwjsd.api.ModuleInfo;
 import de.carne.lwjsd.api.ModuleState;
@@ -454,6 +455,7 @@ final class ServiceStore {
 	private ServiceInfo registerService0(ServiceId serviceId, @Nullable Service service, boolean autoStartFlag) {
 		LOG.info("Registering service ''{0}''...", serviceId);
 
+		@Nullable
 		ServiceInstance serviceInstance = this.serviceInstances.get(serviceId);
 
 		if (serviceInstance == null) {

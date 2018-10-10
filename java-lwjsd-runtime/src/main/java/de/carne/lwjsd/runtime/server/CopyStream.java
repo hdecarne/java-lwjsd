@@ -23,7 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-import de.carne.boot.check.Nullable;
+import org.eclipse.jdt.annotation.Nullable;
 
 class CopyStream extends InputStream {
 
@@ -46,7 +46,7 @@ class CopyStream extends InputStream {
 	}
 
 	@Override
-	public int read(@Nullable byte[] buf, int off, int len) throws IOException {
+	public int read(byte @Nullable [] buf, int off, int len) throws IOException {
 		int read = this.in.read(buf, off, len);
 
 		if (read != -1) {

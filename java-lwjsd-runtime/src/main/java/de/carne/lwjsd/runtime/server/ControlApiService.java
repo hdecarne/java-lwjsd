@@ -21,10 +21,10 @@ import java.io.InputStream;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 
 import de.carne.boot.check.Check;
-import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.ServiceId;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.runtime.ws.ControlApi;

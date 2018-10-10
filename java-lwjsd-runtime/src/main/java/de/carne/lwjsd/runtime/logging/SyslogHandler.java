@@ -24,10 +24,11 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 
-import de.carne.boot.check.Nullable;
-import de.carne.io.Closeables;
+import org.eclipse.jdt.annotation.Nullable;
+
 import de.carne.boot.logging.LogLevel;
 import de.carne.boot.logging.Logs;
+import de.carne.io.Closeables;
 
 /**
  * {@linkplain Handler} implementation providing Syslog support.
@@ -47,7 +48,7 @@ public class SyslogHandler extends Handler {
 
 	/**
 	 * Constructs a new {@linkplain SyslogHandler} instance.
-	 * 
+	 *
 	 * @param destination the initial {@linkplain SyslogDestination} to use for sending log messages.
 	 */
 	public SyslogHandler(@Nullable SyslogDestination destination) {

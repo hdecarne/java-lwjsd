@@ -16,8 +16,9 @@
  */
 package de.carne.lwjsd.runtime.ws;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import de.carne.boot.check.Check;
-import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.ServiceId;
 import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceState;

@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.glassfish.grizzly.Buffer;
 import org.glassfish.grizzly.filterchain.BaseFilter;
 import org.glassfish.grizzly.filterchain.FilterChain;
@@ -35,7 +36,6 @@ import org.glassfish.grizzly.nio.transport.UDPNIOConnection;
 
 import de.carne.boot.Exceptions;
 import de.carne.boot.check.Check;
-import de.carne.boot.check.Nullable;
 import de.carne.lwjsd.api.Service;
 import de.carne.lwjsd.runtime.logging.SyslogConfig;
 
@@ -52,6 +52,7 @@ abstract class SyslogReceiver implements Service {
 
 	@Nullable
 	public String pollMessage(SyslogConfig config) throws InterruptedException {
+		@Nullable
 		String message = this.messages.poll(TIMEOUT, TimeUnit.MILLISECONDS);
 
 		if (message == null) {

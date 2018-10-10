@@ -29,9 +29,10 @@ import java.net.SocketAddress;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
-import de.carne.boot.check.Nullable;
-import de.carne.io.Closeables;
+import org.eclipse.jdt.annotation.Nullable;
+
 import de.carne.boot.logging.Log;
+import de.carne.io.Closeables;
 
 /**
  * An instances of this class represents a single Syslog destination to which {@linkplain SyslogMessage}s can be sent.

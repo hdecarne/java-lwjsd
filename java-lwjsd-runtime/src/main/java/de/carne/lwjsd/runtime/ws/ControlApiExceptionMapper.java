@@ -20,11 +20,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
-import de.carne.boot.check.Nullable;
-import de.carne.lwjsd.api.ReasonMessage;
-import de.carne.lwjsd.api.ServiceManagerException;
+import org.eclipse.jdt.annotation.Nullable;
+
 import de.carne.boot.logging.Log;
 import de.carne.boot.logging.LogLevel;
+import de.carne.lwjsd.api.ReasonMessage;
+import de.carne.lwjsd.api.ServiceManagerException;
 
 /**
  * {@linkplain ExceptionMapper} implementation for making the error details available to the client.

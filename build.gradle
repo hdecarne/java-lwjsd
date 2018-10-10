@@ -12,7 +12,7 @@ def resolveProperty(propertyName, envName) {
 	def resolved = (project.findProperty(propertyName) ?: System.getenv(envName));
 
 	if(resolved == null) {
-		throw new GradleException("Missing property/environment variable: '${propertyName}'/'${envName}")
+		throw new GradleException("Missing property/environment variable: '${propertyName}'/'${envName}'")
 	}
 	return resolved; 
 }
@@ -40,8 +40,8 @@ subprojects {
 	}
 
 	dependencies {
-		testImplementation("org.junit.jupiter:junit-jupiter-api:5.2.0")
-		testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.2.0")
+		testImplementation(group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.3.1")
+		testRuntimeOnly(group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.3.1")
 	}
 
 	test {

@@ -34,12 +34,13 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.glassfish.jersey.client.proxy.WebResourceFactory;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 
-import de.carne.boot.check.Nullable;
+import de.carne.boot.logging.Log;
 import de.carne.lwjsd.api.ModuleInfo;
 import de.carne.lwjsd.api.ReasonMessage;
 import de.carne.lwjsd.api.ServiceId;
@@ -60,7 +61,6 @@ import de.carne.lwjsd.runtime.ws.RegisterModuleMultiPartHandler;
 import de.carne.util.Debug;
 import de.carne.util.Late;
 import de.carne.util.ManifestInfos;
-import de.carne.boot.logging.Log;
 
 /**
  * The class provides remote access to the master server's {@linkplain ServiceManager} interface.

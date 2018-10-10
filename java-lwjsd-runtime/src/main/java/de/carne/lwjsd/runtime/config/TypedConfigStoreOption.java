@@ -19,8 +19,9 @@ package de.carne.lwjsd.runtime.config;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import de.carne.boot.check.Check;
-import de.carne.boot.check.Nullable;
 
 abstract class TypedConfigStoreOption<T> extends ConfigStoreOption implements Consumer<T>, Supplier<T> {
 
