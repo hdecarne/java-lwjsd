@@ -2,6 +2,3 @@ rootProject.name = 'java-lwjsd'
 
 include 'java-lwjsd-api'
 include 'java-lwjsd-runtime'
-
-// To be removed at arrival of Gradle 5.0
-enableFeaturePreview('STABLE_PUBLISHING')

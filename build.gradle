@@ -1,7 +1,7 @@
 // Plugins
 plugins {
 	id "org.sonarqube" version "2.6.2" apply true
-	id "com.jfrog.artifactory" version "4.7.5" apply false
+	id "com.jfrog.artifactory" version "4.8.1" apply false
 	id "com.jfrog.bintray" version "1.8.4" apply false
 }
 
@@ -27,8 +27,8 @@ subprojects {
 	apply plugin: "com.jfrog.artifactory" 
 	apply plugin: "com.jfrog.bintray"
 
-	sourceCompatibility = JavaVersion.VERSION_1_10
-	targetCompatibility = JavaVersion.VERSION_1_10
+	sourceCompatibility = JavaVersion.VERSION_11
+	targetCompatibility = JavaVersion.VERSION_11
 
 	repositories {
 		if(snapshotBuild) {
@@ -151,6 +151,23 @@ subprojects {
 		classpath {
 			downloadSources = true
 			downloadJavadoc = true
+			file {
+				whenMerged {
+					def eeaPath = project.findProperty("eclipse.eeaPath");
+					 
+					entries.forEach {
+						if(it.path.startsWith("org.eclipse.jdt.launching.JRE_CONTAINER")) {
+							if(eeaPath != null) {
+								it.entryAttributes.put("annotationpath", eeaPath)
+							}
+						} else if(it.path.contains("/caches/modules-2/")) {
+							if(eeaPath != null) {
+								it.entryAttributes.put("annotationpath", eeaPath)
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }
