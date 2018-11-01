@@ -25,13 +25,13 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import de.carne.boot.check.Check;
 import de.carne.boot.logging.Log;
 import de.carne.lwjsd.runtime.config.Config;
 import de.carne.nio.file.attribute.FileAttributes;
@@ -253,7 +253,7 @@ public final class SecretsStore {
 		}
 
 		public Map<String, String> getCipherKeys() {
-			return Collections.unmodifiableMap(Check.notNull(this.cipherKeys));
+			return Collections.unmodifiableMap(Objects.requireNonNull(this.cipherKeys));
 		}
 
 		// Implicitly used by ObjectMapper
@@ -263,7 +263,7 @@ public final class SecretsStore {
 		}
 
 		public Map<String, String> getSignatureKeys() {
-			return Collections.unmodifiableMap(Check.notNull(this.signatureKeys));
+			return Collections.unmodifiableMap(Objects.requireNonNull(this.signatureKeys));
 		}
 
 		// Implicitly used by ObjectMapper

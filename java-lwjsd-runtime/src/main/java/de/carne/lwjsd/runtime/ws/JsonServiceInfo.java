@@ -16,9 +16,10 @@
  */
 package de.carne.lwjsd.runtime.ws;
 
+import java.util.Objects;
+
 import org.eclipse.jdt.annotation.Nullable;
 
-import de.carne.boot.check.Check;
 import de.carne.lwjsd.api.ServiceId;
 import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceState;
@@ -72,7 +73,7 @@ public final class JsonServiceInfo {
 	 * @return {@code moduleName} attribute.
 	 */
 	public String getModuleName() {
-		return Check.notNull(this.moduleName);
+		return Objects.requireNonNull(this.moduleName);
 	}
 
 	/**
@@ -90,7 +91,7 @@ public final class JsonServiceInfo {
 	 * @return {@code serviceName} attribute.
 	 */
 	public String getServiceName() {
-		return Check.notNull(this.serviceName);
+		return Objects.requireNonNull(this.serviceName);
 	}
 
 	/**
@@ -108,7 +109,7 @@ public final class JsonServiceInfo {
 	 * @return {@code state} attribute.
 	 */
 	public ServiceState getState() {
-		return Check.notNull(this.state);
+		return Objects.requireNonNull(this.state);
 	}
 
 	/**

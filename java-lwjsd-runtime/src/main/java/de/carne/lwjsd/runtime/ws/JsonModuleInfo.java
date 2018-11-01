@@ -16,9 +16,10 @@
  */
 package de.carne.lwjsd.runtime.ws;
 
+import java.util.Objects;
+
 import org.eclipse.jdt.annotation.Nullable;
 
-import de.carne.boot.check.Check;
 import de.carne.lwjsd.api.ModuleInfo;
 import de.carne.lwjsd.api.ModuleState;
 
@@ -67,7 +68,7 @@ public final class JsonModuleInfo {
 	 * @return {@code name} attribute.
 	 */
 	public String getName() {
-		return Check.notNull(this.name);
+		return Objects.requireNonNull(this.name);
 	}
 
 	/**
@@ -85,7 +86,7 @@ public final class JsonModuleInfo {
 	 * @return {@code version} attribute.
 	 */
 	public String getVersion() {
-		return Check.notNull(this.version);
+		return Objects.requireNonNull(this.version);
 	}
 
 	/**
@@ -103,7 +104,7 @@ public final class JsonModuleInfo {
 	 * @return {@code state} attribute.
 	 */
 	public ModuleState getState() {
-		return Check.notNull(this.state);
+		return Objects.requireNonNull(this.state);
 	}
 
 	/**

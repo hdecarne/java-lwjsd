@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,7 +41,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import de.carne.boot.ApplicationJarClassLoader;
-import de.carne.boot.check.Check;
 import de.carne.boot.logging.Log;
 import de.carne.io.Closeables;
 import de.carne.lwjsd.api.ModuleInfo;
@@ -455,8 +455,7 @@ final class ServiceStore {
 	private ServiceInfo registerService0(ServiceId serviceId, @Nullable Service service, boolean autoStartFlag) {
 		LOG.info("Registering service ''{0}''...", serviceId);
 
-		@Nullable
-		ServiceInstance serviceInstance = this.serviceInstances.get(serviceId);
+		@Nullable ServiceInstance serviceInstance = this.serviceInstances.get(serviceId);
 
 		if (serviceInstance == null) {
 			serviceInstance = new ServiceInstance(this.serviceFactory, serviceId, autoStartFlag);
@@ -475,7 +474,7 @@ final class ServiceStore {
 	private void autoDiscoverModuleServices(String moduleName) {
 		LOG.info("Auto discovering services for module ''{0}''...", moduleName);
 
-		ClassLoader loader = Check.notNull(this.moduleCache.get(moduleName));
+		ClassLoader loader = Objects.requireNonNull(this.moduleCache.get(moduleName));
 		ServiceLoader<Service> services = ServiceLoader.load(Service.class, loader);
 
 		for (Service service : services) {
@@ -491,7 +490,7 @@ final class ServiceStore {
 		if (loader == null) {
 			LOG.info("Instantiating module ''{0}''...", moduleName);
 
-			ModuleInstance moduleInstance = Check.notNull(this.moduleInstances.get(moduleName));
+			ModuleInstance moduleInstance = Objects.requireNonNull(this.moduleInstances.get(moduleName));
 			String moduleFileName = moduleInstance.fileName();
 			String signaturePrefix = moduleFileName + ".";
 			Collection<String> moduleSignatures;
@@ -670,7 +669,7 @@ final class ServiceStore {
 		}
 
 		public Collection<JsonServiceStoreService> getServices() {
-			return Check.notNull(this.services);
+			return Objects.requireNonNull(this.services);
 		}
 
 		// Implicitly used by ObjectMapper
@@ -702,7 +701,7 @@ final class ServiceStore {
 		}
 
 		public String getModuleName() {
-			return Check.notNull(this.moduleName);
+			return Objects.requireNonNull(this.moduleName);
 		}
 
 		// Implicitly used by ObjectMapper
@@ -712,7 +711,7 @@ final class ServiceStore {
 		}
 
 		public String getServiceName() {
-			return Check.notNull(this.serviceName);
+			return Objects.requireNonNull(this.serviceName);
 		}
 
 		// Implicitly used by ObjectMapper

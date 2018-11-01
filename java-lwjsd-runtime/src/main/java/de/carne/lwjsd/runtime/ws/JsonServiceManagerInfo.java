@@ -18,11 +18,11 @@ package de.carne.lwjsd.runtime.ws;
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.Nullable;
 
-import de.carne.boot.check.Check;
 import de.carne.lwjsd.api.ModuleInfo;
 import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceManagerInfo;
@@ -76,7 +76,7 @@ public final class JsonServiceManagerInfo {
 	 * @return {@code baseUri} attribute.
 	 */
 	public URI getBaseUri() {
-		return Check.notNull(this.baseUri);
+		return Objects.requireNonNull(this.baseUri);
 	}
 
 	/**
@@ -94,7 +94,7 @@ public final class JsonServiceManagerInfo {
 	 * @return {@code state} attribute.
 	 */
 	public ServiceManagerState getState() {
-		return Check.notNull(this.state);
+		return Objects.requireNonNull(this.state);
 	}
 
 	/**
@@ -112,7 +112,7 @@ public final class JsonServiceManagerInfo {
 	 * @return {@code moduleInfos} attribute.
 	 */
 	public Collection<JsonModuleInfo> getModuleInfos() {
-		return Check.notNull(this.moduleInfos);
+		return Objects.requireNonNull(this.moduleInfos);
 	}
 
 	/**
@@ -130,7 +130,7 @@ public final class JsonServiceManagerInfo {
 	 * @return {@code serviceInfos} attribute.
 	 */
 	public Collection<JsonServiceInfo> getServiceInfos() {
-		return Check.notNull(this.serviceInfos);
+		return Objects.requireNonNull(this.serviceInfos);
 	}
 
 	/**

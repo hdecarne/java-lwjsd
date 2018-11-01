@@ -18,6 +18,7 @@ package de.carne.lwjsd.runtime.test.logging;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -52,8 +53,7 @@ abstract class SyslogReceiver implements Service {
 
 	@Nullable
 	public String pollMessage(SyslogConfig config) throws InterruptedException {
-		@Nullable
-		String message = this.messages.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+		@Nullable String message = this.messages.poll(TIMEOUT, TimeUnit.MILLISECONDS);
 
 		if (message == null) {
 			throw new IllegalStateException("Unexpected " + config.getProtocol() + " poll timeout");
@@ -132,7 +132,7 @@ abstract class SyslogReceiver implements Service {
 
 		@Override
 		public NextAction handleRead(@Nullable FilterChainContext ctx) throws IOException {
-			return this.handler.apply(Check.notNull(ctx));
+			return this.handler.apply(Objects.requireNonNull(ctx));
 		}
 
 	}

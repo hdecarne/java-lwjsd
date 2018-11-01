@@ -16,9 +16,10 @@
  */
 package de.carne.lwjsd.runtime.ws;
 
+import java.util.Objects;
+
 import org.eclipse.jdt.annotation.Nullable;
 
-import de.carne.boot.check.Check;
 import de.carne.lwjsd.api.ReasonMessage;
 
 /**
@@ -62,7 +63,7 @@ public final class JsonReasonMessage {
 	 * @return {@code reason} attribute.
 	 */
 	public ReasonMessage.Reason getReason() {
-		return Check.notNull(this.reason);
+		return Objects.requireNonNull(this.reason);
 	}
 
 	/**
@@ -80,7 +81,7 @@ public final class JsonReasonMessage {
 	 * @return {@code message} attribute.
 	 */
 	public String getMessage() {
-		return Check.notNull(this.message);
+		return Objects.requireNonNull(this.message);
 	}
 
 	/**

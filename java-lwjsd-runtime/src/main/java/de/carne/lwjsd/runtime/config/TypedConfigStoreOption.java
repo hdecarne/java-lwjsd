@@ -19,10 +19,6 @@ package de.carne.lwjsd.runtime.config;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jdt.annotation.Nullable;
-
-import de.carne.boot.check.Check;
-
 abstract class TypedConfigStoreOption<T> extends ConfigStoreOption implements Consumer<T>, Supplier<T> {
 
 	private T initialValue;
@@ -39,8 +35,8 @@ abstract class TypedConfigStoreOption<T> extends ConfigStoreOption implements Co
 	}
 
 	@Override
-	public void accept(@Nullable T value) {
-		this.currentValue = Check.notNull(value);
+	public void accept(T value) {
+		this.currentValue = value;
 	}
 
 	@Override

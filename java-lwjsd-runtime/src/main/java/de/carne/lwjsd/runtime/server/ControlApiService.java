@@ -17,6 +17,7 @@
 package de.carne.lwjsd.runtime.server;
 
 import java.io.InputStream;
+import java.util.Objects;
 
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
@@ -87,7 +88,7 @@ class ControlApiService implements ControlApi {
 	}
 
 	private Server getServer() {
-		return Check.isInstanceOf(Check.notNull(this.application).getProperties().get(Server.class.getName()),
+		return Check.isInstanceOf(Objects.requireNonNull(this.application).getProperties().get(Server.class.getName()),
 				Server.class);
 	}
 
