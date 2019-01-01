@@ -40,8 +40,8 @@ subprojects {
 	}
 
 	dependencies {
-		testImplementation(group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.3.1")
-		testRuntimeOnly(group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.3.1")
+		testImplementation(group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.4.0-M1")
+		testRuntimeOnly(group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.4.0-M1")
 	}
 
 	test {
