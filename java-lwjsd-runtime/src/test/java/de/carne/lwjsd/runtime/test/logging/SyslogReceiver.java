@@ -42,7 +42,7 @@ import de.carne.lwjsd.runtime.logging.SyslogConfig;
 
 abstract class SyslogReceiver implements Service {
 
-	private static final int TIMEOUT = 1000;
+	private static final int TIMEOUT = 5000;
 
 	private static final Pattern RFC3164_PATTERN = Pattern
 			.compile("^<\\d+>\\w{3} \\d{2} \\d{2}:\\d{2}:\\d{2} \\S+ \\S+ (.+)$");
