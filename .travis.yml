@@ -27,8 +27,11 @@ after_success:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./gradlew --stacktrace artifactoryPublish sonarqube checkDependencyVersions; fi
 
 notifications:
+  email: false
   slack:
     secure: JZ4L8fLtOuh1AdfyZHun9t0zX4ygPfbLOQHdY4KV022mdZJBdCnjAqzsPNSXcHWlR9Ab+HP2Pi3F1oqb5z1LwKizS+IBOhguTkFlVTTPwqqIIliG3kOS4mZz40FiCh9hydCgTF67IWaRpPTu/clkCDT4q4+hJehQLgijnCfsU53aY0NLnRxWKUmVk9Ce+1S5nS0k9CEmRHO9PdwicV1Y5ST67C2BnNj9DATPiGrDPPA9QPxh5YOjnh5oJ2DZhu0TGdHjMhDpDHyo6CbMJ0pX+5Bp7ES/zk/DQTVvEkZd9CmBRRHX4fg03/rp8lZFVbqm6Lk0Oacgaj+LXsRmixF8HrY382rVEBCG1j+1Cw9z/Ej/vG2TjD1CYRJkdfs89NU0aOoBrxKyXh2Pbz2/1B+zEzTTTGbK3N4NzTPNwnVXZZSsLuGA+IwcM6EHaNDn+4ZDuyUXfokfULshrlG15qY123FttCYzmiqb1OeFw+kwm94eREPuQzyYusfsJxO8RWCqyopnM8hJ1Dldp7WiL9xQlUH0TYBRkUtIWLsEcTG2o7Ws7rXIHIy+nx7FydiXRV4I5F+RfhS0zQiowtzbwhHOU/3QIOEMtayIaEjxouIUsI7exw9T82LwQLH+xwymZb1dRhWCXHLtj8TdPPmYTUf0zcuhJLDEvIhINut7vqSuEHE=
+    on_success: change
+    on_failure: always
 
 # See https://docs.travis-ci.com/user/languages/java/#caching
 before_cache:
