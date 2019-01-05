@@ -31,6 +31,7 @@ notifications:
   slack:
     rooms:
       - secure: frjPiD1zskUbYSV9x1WzdIqibuPlq9xKTZYahKm8w/Y76kBPZ17J9YLA3OqwvK7nIhbLF4QJzZPY+WoHhK0fCQSVdzvTcyz3jYTNRmFPEMUv6Blnt09nLibfwv+NcfYYoEogbvaff0bIj40q2UK2xc5fJE9TKjW/74pRinwHO2+y5tAP2EMMDusZUUooyM/d+nwT1wvFcgWCOnAOiJmlRZoRCRpwF/i8TweYDLVgR1j+FMQmKM68AajB8Sblv6BB4TaheoPucGKzt6c7zRFEf+2CferEsPIgu0fJikpunjKrjeShyPMF+7c9SWy/K1G1cvI0gb9XOOJNEgRYZuaXFUSIQwMjI6cHFX+Wj074ujbE1VI+oySKQLJIdZrZyUo4//mp2qnvc5s4zavSrFxvT8IodEPrKaia6IwZQvFCC3DR32eMozDKNcig/ilDl3T/CBq/V+maZ6Q6XNnBtJhOti6+r7nn2IPpk6nrdllPn+v9NutfqhaZ/7K6PhMbzmW6NMaQyzMBiEwpishEZNnriZUPgx9EPN6OrT1bUZ9xWUPXilNBoJBYl1CItWnsvQE4ulqC+cJY3FejvWAmy2bap9kKW544CxUWUGkGQmbP7Jv0GjDDDDAOSedEyULQ61D8OD+cT0g8leOq6Tbd2PtJi+B1iLB5ccf+ZyNDiWnJEs4=
+    on_success: change
 
 # See https://docs.travis-ci.com/user/languages/java/#caching
 before_cache:
