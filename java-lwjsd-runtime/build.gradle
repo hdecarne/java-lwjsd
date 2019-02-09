@@ -20,9 +20,9 @@ jar {
 	
 	manifest {
 		attributes(
-			"X-Application-Name": "lwjsd-runtime",
-			"X-Application-Version": project.version,
-			"X-Application-Build": buildTimestamp
+			"X-Module-Name": "lwjsd-runtime",
+			"X-Module-Version": project.version,
+			"X-Module-Build": buildTimestamp
 		)
 	}
 }
