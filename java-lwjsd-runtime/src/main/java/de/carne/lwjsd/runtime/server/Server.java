@@ -119,7 +119,7 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 	 * If the server is started in the current thread the function only returns after the server has been stopped.
 	 *
 	 * @param foreground whether to start and run the server in the current thread ({@code true}) or in a background
-	 *        thread.
+	 * thread.
 	 * @return the {@linkplain Thread} instance running the server.
 	 * @throws ServiceManagerException if the startup fails.
 	 * @throws InterruptedException if the thread is interrupted during server startup or execution.
@@ -187,7 +187,7 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 	 * @param fileStream the file stream to receive.
 	 * @param fileName the file name of {@linkplain Service} module.
 	 * @param force whether to force unloading and overwriting of an already running {@linkplain Service} module with
-	 *        the same name.
+	 * the same name.
 	 * @return the updated {@linkplain Service} module status.
 	 * @throws ServiceManagerException if an error occurs while registering the {@linkplain Service} module.
 	 */
@@ -311,7 +311,7 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 			LOG.warning("Discarding {0} unprocessed server requests", pendingRequestCount);
 			this.requests.clear();
 		}
-		this.httpServerHolder.toOptional().ifPresent(HttpServer::shutdownNow);
+		this.httpServerHolder.getOptional().ifPresent(HttpServer::shutdownNow);
 		this.serviceStore.close();
 	}
 
@@ -343,7 +343,7 @@ public class Server implements ServiceManager, ServiceContext, AutoCloseable {
 		this.state = ServiceManagerState.STOPPED;
 		notifyAll();
 		try {
-			this.httpServerHolder.toOptional().ifPresent(httpServer -> {
+			this.httpServerHolder.getOptional().ifPresent(httpServer -> {
 				try {
 					httpServer.shutdown(WAIT_TIMEOUT, TimeUnit.MILLISECONDS).get();
 				} catch (InterruptedException e) {

@@ -48,6 +48,7 @@ import de.carne.lwjsd.api.ServiceInfo;
 import de.carne.lwjsd.api.ServiceManager;
 import de.carne.lwjsd.api.ServiceManagerException;
 import de.carne.lwjsd.api.ServiceManagerInfo;
+import de.carne.lwjsd.runtime.ModuleManifestInfos;
 import de.carne.lwjsd.runtime.config.Config;
 import de.carne.lwjsd.runtime.config.ConfigStore;
 import de.carne.lwjsd.runtime.security.CharSecret;
@@ -60,7 +61,6 @@ import de.carne.lwjsd.runtime.ws.JsonReasonMessage;
 import de.carne.lwjsd.runtime.ws.RegisterModuleMultiPartHandler;
 import de.carne.util.Debug;
 import de.carne.util.Late;
-import de.carne.util.ManifestInfos;
 
 /**
  * The class provides remote access to the master server's {@linkplain ServiceManager} interface.
@@ -117,9 +117,12 @@ public final class Client implements ServiceManager, AutoCloseable {
 
 		LOG.info("Server version: ''{0}''", serverVersion);
 
-		if (!ManifestInfos.APPLICATION_VERSION.equals(serverVersion)) {
+		ModuleManifestInfos clientInfos = new ModuleManifestInfos();
+		String clientVersion = clientInfos.version();
+
+		if (!clientVersion.equals(serverVersion)) {
 			throw new ServiceManagerException("Client/server version mismatch (expected: ''{0}''; actual: ''{1}''",
-					ManifestInfos.APPLICATION_VERSION, serverVersion);
+					clientVersion, serverVersion);
 		}
 
 		LOG.notice("Successfully connected to server ''{0}'' (version: ''{1}'')", baseUri, serverVersion);
@@ -279,7 +282,7 @@ public final class Client implements ServiceManager, AutoCloseable {
 
 		LOG.info("Closing connection to server ''{0}''...", baseUri);
 
-		this.controlApiClientHolder.toOptional().ifPresent(javax.ws.rs.client.Client::close);
+		this.controlApiClientHolder.getOptional().ifPresent(javax.ws.rs.client.Client::close);
 
 		LOG.notice("Connection to server ''{0}'' has been closed", this.configStore.getBaseUri());
 	}

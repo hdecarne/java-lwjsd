@@ -28,11 +28,11 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import de.carne.boot.check.Check;
 import de.carne.lwjsd.api.ServiceId;
 import de.carne.lwjsd.api.ServiceManagerException;
+import de.carne.lwjsd.runtime.ModuleManifestInfos;
 import de.carne.lwjsd.runtime.ws.ControlApi;
 import de.carne.lwjsd.runtime.ws.JsonModuleInfo;
 import de.carne.lwjsd.runtime.ws.JsonServiceInfo;
 import de.carne.lwjsd.runtime.ws.JsonServiceManagerInfo;
-import de.carne.util.ManifestInfos;
 
 class ControlApiService implements ControlApi {
 
@@ -42,7 +42,9 @@ class ControlApiService implements ControlApi {
 
 	@Override
 	public String getVersion() {
-		return ManifestInfos.APPLICATION_VERSION;
+		ModuleManifestInfos serverInfos = new ModuleManifestInfos();
+
+		return serverInfos.version();
 	}
 
 	@Override
