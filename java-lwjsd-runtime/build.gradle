@@ -1,18 +1,19 @@
 apply plugin: "distribution"
 
 dependencies {
-	configurations.runtime.exclude(group: "org.eclipse.jdt", module: "org.eclipse.jdt.annotation")
+	compileOnly(group: "org.eclipse.jdt", name: "org.eclipse.jdt.annotation", version: project.annotationVersion)
+	testCompileOnly(group: "org.eclipse.jdt", name: "org.eclipse.jdt.annotation", version: project.annotationVersion)
 	implementation project(":java-lwjsd-api")
-	implementation(group: "javax.ws.rs", name: "javax.ws.rs-api", version: "2.1.1")
-	implementation(group: "org.glassfish.jersey.core", name: "jersey-client", version: "2.27")
-	implementation(group: "org.glassfish.jersey.core", name: "jersey-server", version: "2.27")
-	implementation(group: "org.glassfish.jersey.containers", name: "jersey-container-grizzly2-http", version: "2.27")
-	implementation(group: "org.glassfish.jersey.media", name: "jersey-media-json-jackson", version: "2.27")
-	implementation(group: "org.glassfish.jersey.media", name: "jersey-media-multipart", version: "2.27")
-	implementation(group: "org.glassfish.jersey.ext", name: "jersey-proxy-client", version: "2.27")
-	runtime(group: "org.glassfish.jersey.inject", name: "jersey-hk2", version: "2.27")
-	runtime(group: "javax.xml.bind", name: "jaxb-api", version: "2.3.0")
-	runtime(group: "javax.activation", name: "activation", version: "1.1.1")
+	implementation(group: "javax.ws.rs", name: "javax.ws.rs-api", version: project.javaxWsRsVersion)
+	implementation(group: "org.glassfish.jersey.core", name: "jersey-client", version: project.glassfishJerseyVersion)
+	implementation(group: "org.glassfish.jersey.core", name: "jersey-server", version: project.glassfishJerseyVersion)
+	implementation(group: "org.glassfish.jersey.containers", name: "jersey-container-grizzly2-http", version: project.glassfishJerseyVersion)
+	implementation(group: "org.glassfish.jersey.media", name: "jersey-media-json-jackson", version: project.glassfishJerseyVersion)
+	implementation(group: "org.glassfish.jersey.media", name: "jersey-media-multipart", version: project.glassfishJerseyVersion)
+	implementation(group: "org.glassfish.jersey.ext", name: "jersey-proxy-client", version: project.glassfishJerseyVersion)
+	runtime(group: "org.glassfish.jersey.inject", name: "jersey-hk2", version: project.glassfishJerseyVersion)
+	runtime(group: "javax.xml.bind", name: "jaxb-api", version: project.javaxXmlBindVersion)
+	runtime(group: "javax.activation", name: "activation", version: project.javaxActivationVersion)
 }
 
 jar {
