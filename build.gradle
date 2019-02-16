@@ -42,8 +42,7 @@ subprojects {
 	}
 
 	dependencies {
-		testImplementation(group: "org.junit.jupiter", name: "junit-jupiter-api", version: project.junit5Version)
-		testRuntimeOnly(group: "org.junit.jupiter", name: "junit-jupiter-engine", version: project.junit5Version)
+		testImplementation(group: "de.carne.common", name: "java-test", version: project.javaTestVersion)
 	}
 
 	test {
