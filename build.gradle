@@ -2,7 +2,7 @@
 plugins {
 	id "de.carne.java-tools" version "0.7.2" apply false
 	id "org.sonarqube" version "2.7.1" apply true
-	id "com.jfrog.artifactory" version "4.9.8" apply false
+	id "com.jfrog.artifactory" version "4.9.9" apply false
 	id "com.jfrog.bintray" version "1.8.4" apply false
 }
 
@@ -54,7 +54,7 @@ subprojects {
 	}
 
 	jacoco {
-		toolVersion = "0.8.3"
+		toolVersion = "0.8.4"
 	}
 
 	jacocoTestReport {
