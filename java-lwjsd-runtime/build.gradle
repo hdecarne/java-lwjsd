@@ -52,7 +52,7 @@ distributions {
 
 tasks.withType(Tar){
 	compression = Compression.GZIP
-	extension = "tar.gz"
+	archiveExtension = "tar.gz"
 }
 
 task testServiceJar(type: Jar) {
