@@ -1,6 +1,6 @@
 // Plugins
 plugins {
-	id "de.carne.java-tools" version "0.7.5" apply false
+	id "de.carne.java-tools" version "0.8.2" apply false
 	id "org.sonarqube" version "2.8" apply true
 	id "com.jfrog.artifactory" version "4.13.0" apply false
 	id "com.jfrog.bintray" version "1.8.4" apply false
@@ -9,13 +9,8 @@ plugins {
 // Build helpers
 def snapshotBuild = project.version.endsWith("-SNAPSHOT")
 
-def resolveProperty(propertyName, envName) {
-	def resolved = (project.findProperty(propertyName) ?: System.getenv(envName));
-
-	if(resolved == null) {
-		throw new GradleException("Missing property/environment variable: '${propertyName}'/'${envName}'")
-	}
-	return resolved; 
+def resolveProperty(propertyName, envName, defValue = "<undefined>") {
+	return ((project.findProperty(propertyName) ?: System.getenv(envName)) ?: defValue);
 }
 
 // Projects
@@ -141,6 +136,9 @@ subprojects {
 		user = project.resolveProperty("bintrayUser", "BINTRAY_USER")
 		key = project.resolveProperty("bintrayKey", "BINTRAY_KEY")
 		publications = [ "Bintray" ]
+		dryRun = (project.findProperty("bintray.dryRun") ?: false);
+		publish = (project.findProperty("bintray.publish") ?: !snapshotBuild);
+		override = (project.findProperty("bintray.override") ?: false);
 		pkg {
 			repo = "maven"
 			name = project.name
@@ -150,6 +148,10 @@ subprojects {
 				gpg {
 					sign = true
 					passphrase = project.resolveProperty("bintrayGpgPassphrase", "BINTRAY_GPG_PASSPHRASE")
+				}
+				mavenCentralSync {
+					user = project.resolveProperty("ossrhUsername", "OSSRH_USERNAME")
+					password = project.resolveProperty("ossrhPassword", "OSSRH_PASSWORD")
 				}
 			}
 		}

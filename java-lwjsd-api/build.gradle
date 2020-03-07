@@ -6,13 +6,20 @@ dependencies {
 }
 
 jar {
-	def buildTimestamp = new java.text.SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-	
 	manifest {
 		attributes(
-			"X-Module-Name": "lwjsd-api",
-			"X-Module-Version": project.version,
-			"X-Module-Build": buildTimestamp
+			'Created-By': "Gradle ${gradle.gradleVersion} (${System.properties['os.name']}:${System.properties['os.arch']}:${System.properties['os.version']})",
+			'Build-Jdk' : System.properties['java.version'],
+			'Build-Timestamp': new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ").format(new Date()),
+			'X-Compile-Target-JDK': targetCompatibility,
+			'X-Compile-Source-JDK': sourceCompatibility,
+			'X-Project-Name': project.name,
+			'X-Project-Version': project.version,
+			'X-Project-DocURL': projectUrl,
+			'X-Project-License': projectLicenseUrl,
+			'X-Module-Name': "lwjsd-api",
+			'X-Module-Version': project.version,
+			'X-Module-Build': new java.text.SimpleDateFormat("yyyyMMddHHmmss").format(new Date())
 		)
 	}
 }
