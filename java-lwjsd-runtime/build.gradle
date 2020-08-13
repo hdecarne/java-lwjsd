@@ -63,8 +63,8 @@ tasks.withType(Tar){
 }
 
 task testServiceJar(type: Jar) {
-	baseName = project.name + "-test-services"
-	version = "0.0.0"
+	archiveBaseName = project.name + "-test-services"
+	archiveVersion = "0.0.0"
 	from sourceSets.test.output
 	include "de/carne/lwjsd/runtime/test/services/**/*"
 	include "META-INF/services/*"
