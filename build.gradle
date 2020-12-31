@@ -2,7 +2,7 @@
 plugins {
 	id "de.carne.java-tools" version "0.9.0" apply false
 	id "org.sonarqube" version "3.0" apply true
-	id "com.jfrog.artifactory" version "4.16.1" apply false
+	id "com.jfrog.artifactory" version "4.18.2" apply false
 	id "com.jfrog.bintray" version "1.8.5" apply false
 }
 
@@ -113,7 +113,7 @@ subprojects {
 	}
 
 	artifactory {
-		contextUrl = "https://oss.jfrog.org/artifactory"
+		contextUrl = project.resolveProperty("artifactory_url", "ARTIFACTORY_URL", "https://oss.jfrog.org/artifactory")
 		publish {
 			repository {
 				repoKey = (snapshotBuild ? "oss-snapshot-local" : "oss-release-local")
